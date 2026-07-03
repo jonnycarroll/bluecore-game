@@ -17,6 +17,14 @@ A small browser-based isometric grid explorer and early layout-engine prototype 
 
 Open `index.html` in a modern browser. There is no build step and no runtime dependency install required for the current app.
 
+Or serve the project locally from the repo root:
+
+```bash
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000`.
+
 Run the math regression test with:
 
 ```bash
