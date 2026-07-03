@@ -19,7 +19,7 @@ class IsoGrid {
             this.tileWidth,
             this.tileHeight
         );
-        this.scene = IsoScene.createDefault(this.getTileEdgeLength() / 2);
+        this.scene = IsoScene.createDefault();
         this.offsetX = 0;
         this.offsetY = 0;
         this.isDragging = false;
@@ -352,7 +352,7 @@ class IsoGrid {
     
     render() {
         // Clear canvas behind the tiled surface.
-        this.ctx.fillStyle = '#000';
+        this.ctx.fillStyle = '#00a0ff';
         this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
         
         const { startX, endX, startY, endY } = this.getVisibleTiles();

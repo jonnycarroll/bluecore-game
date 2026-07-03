@@ -3,17 +3,8 @@ class IsoScene {
         this.objects = objects;
     }
 
-    static createDefault(cubeHeight) {
-        return new IsoScene([
-            {
-                type: 'cuboid',
-                x: 0,
-                y: 0,
-                levels: 3,
-                height: cubeHeight,
-                material: 'blueBlock'
-            }
-        ]);
+    static createDefault() {
+        return new IsoScene();
     }
 }
 
