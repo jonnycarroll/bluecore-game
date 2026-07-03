@@ -1,4 +1,5 @@
-// Point management system for Exercise My Demons
+// Dormant point management prototype for Isometric Grid Explorer.
+// This file is not loaded by index.html until the game layer is revived.
 
 let points = 0;
 
@@ -26,6 +27,7 @@ function spendPoints(amount) {
 // Update point display in UI
 function updatePointDisplay() {
     const pointElement = document.getElementById('point-count');
+
     if (pointElement) {
         pointElement.textContent = `Points: ${points}`;
     }
