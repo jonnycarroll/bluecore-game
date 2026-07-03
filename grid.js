@@ -10,6 +10,7 @@ class IsoGrid {
         this.tileWidth = 60;
         this.tileHeight = 30;
         this.isoMath = new IsoMath(this.tileWidth, this.tileHeight);
+        this.materials = IsoMaterials;
         this.scene = IsoScene.createDefault(this.getTileEdgeLength() / 2);
         this.offsetX = 0;
         this.offsetY = 0;
@@ -534,7 +535,7 @@ class IsoGrid {
     drawCuboidLevel(object, baseOffset, height) {
         const screenPos = this.getTileScreenPosition(object.x, object.y);
         const baseY = screenPos.y - baseOffset;
-        const colors = object.colors;
+        const colors = this.getObjectMaterial(object);
         const top = [
             { x: screenPos.x, y: baseY - this.tileHeight / 2 - height },
             { x: screenPos.x + this.tileWidth / 2, y: baseY - height },
@@ -552,6 +553,10 @@ class IsoGrid {
         this.drawPolygon([top[2], bottom[2], bottom[3], top[3]], colors.left);
         this.drawPolygon(top, colors.top);
         this.drawLevelSeparator(bottom, colors.separator);
+    }
+
+    getObjectMaterial(object) {
+        return this.materials[object.material] || this.materials.blueBlock;
     }
 
     drawPolygon(points, fillStyle, strokeStyle) {
