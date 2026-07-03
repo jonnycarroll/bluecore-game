@@ -1,0 +1,29 @@
+{
+  "name": "exercise-my-demons",
+  "version": "1.0.0",
+  "description": "A simple isometric grid-based browser game where players build a demon gym by clicking to generate points and purchasing equipment",
+  "main": "index.html",
+  "scripts": {
+    "start": "echo 'Game runs in browser - open index.html'",
+    "test": "echo 'No tests implemented yet'"
+  },
+  "keywords": [
+    "game",
+    "isometric",
+    "browser",
+    "demons",
+    "gym",
+    "html5",
+    "canvas"
+  ],
+  "author": "Exercise My Demons Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jonnycarroll/emd-sim-gym"
+  },
+  "bugs": {
+    "url": "https://github.com/jonnycarroll/emd-sim-gym/issues"
+  },
+  "homepage": "https://github.com/jonnycarroll/emd-sim-gym#readme"
+}
