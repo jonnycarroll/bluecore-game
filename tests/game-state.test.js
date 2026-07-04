@@ -25,20 +25,11 @@ assert.equal(game.canClaim(1, 0), true);
 assert.equal(game.getClaimCost(1, 0), 16);
 
 const farClaimableCost = game.getClaimCost(4, 0);
-game.skills.expansion = 2;
-assert.equal(game.getClaimCost(4, 0), Math.ceil(farClaimableCost * 0.84));
-
-game.skills.expansion = 0;
+assert.equal(farClaimableCost, 28);
 assert.equal(game.claimTile(1, 0), true);
 assert.equal(game.isClaimed(1, 0), true);
 assert.equal(Math.round(game.energy), 24);
 assert.equal(game.canClaim(3, 0), false);
-
-const surveyGame = new IdleGameState();
-surveyGame.addClaimedTile(9, 0);
-assert.equal(surveyGame.isRevealed(11, 0), false);
-surveyGame.skills.surveying = 1;
-assert.equal(surveyGame.isRevealed(11, 0), true);
 
 const productionGame = new IdleGameState();
 productionGame.addClaimedTile(3, 1);
@@ -48,7 +39,9 @@ assert.ok(Math.abs(rates.homeEnergy - 0.6) < 0.000001);
 assert.ok(rates.energy >= rates.homeEnergy);
 assert.equal(productionGame.getProductionRates(), rates);
 
-productionGame.skills.production = 1;
+productionGame.baseLevel = 2;
+productionGame.research = 5;
+assert.equal(productionGame.upgradeTech(resource.type), true);
 productionGame.markProductionDirty();
 const boostedRates = productionGame.getProductionRates();
 if (resource.type === 'energy') {
@@ -67,9 +60,15 @@ assert.equal(idleGame.canLevelUpBase(), true);
 assert.equal(idleGame.levelUpBase(), true);
 assert.equal(idleGame.baseLevel, 2);
 assert.equal(idleGame.getGlobalRevealRadius(), 13);
+assert.equal(idleGame.energy, 40);
+assert.equal(idleGame.baseXp, 0);
+assert.equal(idleGame.research, 10);
+assert.equal(idleGame.claimedTileList.length, 1);
 
-const skillGame = new IdleGameState();
-skillGame.research = 20;
-assert.equal(skillGame.purchaseSkill('production'), true);
-assert.equal(skillGame.skills.production, 1);
-assert.equal(skillGame.research, 0);
+const techGame = new IdleGameState();
+techGame.baseLevel = 2;
+techGame.research = 5;
+assert.equal(techGame.upgradeTech('energy'), true);
+assert.equal(techGame.techs.energy, 1);
+assert.equal(techGame.research, 0);
+assert.equal(techGame.upgradeTech('energy'), false);

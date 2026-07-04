@@ -1,4 +1,4 @@
-// Isometric grid system for Home Core
+// Isometric grid system for Blue Core
 
 class IsoGrid {
     constructor(canvas) {
@@ -44,6 +44,7 @@ class IsoGrid {
         this.idleCanvasRenderInterval = 500;
         this.hudUpdateInterval = 120;
         this.gameStarted = false;
+        this.techTreeOpen = false;
         
         // Set canvas size to full window
         this.resizeCanvas();
@@ -77,12 +78,15 @@ class IsoGrid {
             tileAction: document.getElementById('tile-action'),
             startButton: document.getElementById('start-button'),
             welcomeScreen: document.getElementById('welcome-screen'),
-            researchToggle: document.getElementById('research-toggle'),
-            skillsPanel: document.getElementById('skills-panel'),
-            skillButtons: Array.from(document.querySelectorAll('.skill-button')),
-            skillExpansion: document.getElementById('skill-expansion'),
-            skillProduction: document.getElementById('skill-production'),
-            skillSurveying: document.getElementById('skill-surveying')
+            techOverlay: document.getElementById('tech-overlay'),
+            techTitle: document.getElementById('tech-title'),
+            techPoints: document.getElementById('tech-points'),
+            techAward: document.getElementById('tech-award'),
+            techButtons: Array.from(document.querySelectorAll('.tech-button')),
+            techEnergy: document.getElementById('tech-energy'),
+            techResearch: document.getElementById('tech-research'),
+            resumeRun: document.getElementById('resume-run'),
+            centerButton: document.getElementById('center-button')
         };
     }
 
@@ -177,15 +181,15 @@ class IsoGrid {
         // Center button event listener
         document.getElementById('center-button').addEventListener('click', () => this.centerView());
         this.dom.startButton.addEventListener('click', () => this.startGame());
-        this.dom.researchToggle.addEventListener('click', () => this.toggleResearchPanel());
         this.dom.tileAction.addEventListener('click', () => this.handleSelectedTileAction());
-        for (const button of this.dom.skillButtons) {
+        for (const button of this.dom.techButtons) {
             button.addEventListener('click', () => {
-                this.gameState.purchaseSkill(button.dataset.skill);
+                this.gameState.upgradeTech(button.dataset.tech);
                 this.requestHudUpdate();
                 this.requestRender();
             });
         }
+        this.dom.resumeRun.addEventListener('click', () => this.closeTechTree());
     }
 
     requestRender() {
@@ -196,12 +200,6 @@ class IsoGrid {
     requestHudUpdate() {
         this.hudUpdateRequested = true;
         this.startAnimationLoop();
-    }
-
-    toggleResearchPanel() {
-        const nextExpanded = this.dom.researchToggle.getAttribute('aria-expanded') !== 'true';
-        this.dom.researchToggle.setAttribute('aria-expanded', nextExpanded ? 'true' : 'false');
-        this.dom.skillsPanel.hidden = !nextExpanded;
     }
 
     startGame() {
@@ -240,6 +238,10 @@ class IsoGrid {
     }
     
     handleMouseDown(e) {
+        if (this.techTreeOpen) {
+            return;
+        }
+
         if (!this.gameStarted) {
             const rect = this.canvas.getBoundingClientRect();
             this.placeCoreFromPoint(e.clientX - rect.left, e.clientY - rect.top);
@@ -256,6 +258,10 @@ class IsoGrid {
     }
     
     handleMouseMove(e) {
+        if (this.techTreeOpen) {
+            return;
+        }
+
         if (!this.gameStarted) {
             this.updateCorePlacementFromEvent(e);
             return;
@@ -288,6 +294,10 @@ class IsoGrid {
     }
     
     handleMouseUp(e) {
+        if (this.techTreeOpen) {
+            return;
+        }
+
         if (!this.gameStarted) {
             return;
         }
@@ -302,6 +312,11 @@ class IsoGrid {
     }
     
     handleTouchStart(e) {
+        if (this.techTreeOpen) {
+            e.preventDefault();
+            return;
+        }
+
         if (!this.gameStarted) {
             const rect = this.canvas.getBoundingClientRect();
             this.updateCorePlacementFromPoint(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
@@ -320,6 +335,11 @@ class IsoGrid {
     }
     
     handleTouchMove(e) {
+        if (this.techTreeOpen) {
+            e.preventDefault();
+            return;
+        }
+
         if (!this.gameStarted) {
             const rect = this.canvas.getBoundingClientRect();
             this.updateCorePlacementFromPoint(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
@@ -348,6 +368,11 @@ class IsoGrid {
     }
     
     handleTouchEnd(e) {
+        if (this.techTreeOpen) {
+            e.preventDefault();
+            return;
+        }
+
         if (!this.gameStarted) {
             if (this.corePlacementTile && this.gameState.isHomeCore(this.corePlacementTile.x, this.corePlacementTile.y)) {
                 this.startGame();
@@ -381,17 +406,45 @@ class IsoGrid {
     }
 
     handleInspectedTileAction(force = true) {
+        if (this.techTreeOpen) {
+            return;
+        }
+
         const selected = this.getInspectedTile();
         this.gameState.selectTile(selected.x, selected.y);
 
         if (this.gameState.isHomeCore(selected.x, selected.y) && this.gameState.canLevelUpBase()) {
-            this.gameState.levelUpBase();
+            this.levelUpBase();
         } else if (this.gameState.canClaim(selected.x, selected.y)) {
             this.gameState.claimTile(selected.x, selected.y);
         } else if (force) {
             this.gameState.selectTile(selected.x, selected.y);
         }
 
+        this.requestHudUpdate();
+        this.requestRender();
+    }
+
+    levelUpBase() {
+        if (!this.gameState.levelUpBase()) {
+            return;
+        }
+
+        this.hoveredTile = null;
+        this.hoverAnimations = [];
+        this.openTechTree();
+    }
+
+    openTechTree() {
+        this.techTreeOpen = true;
+        this.dom.techOverlay.hidden = false;
+        this.updateTechTree();
+    }
+
+    closeTechTree() {
+        this.techTreeOpen = false;
+        this.dom.techOverlay.hidden = true;
+        this.gameState.lastTick = 0;
         this.requestHudUpdate();
         this.requestRender();
     }
@@ -572,7 +625,7 @@ class IsoGrid {
         const deltaMs = this.lastAnimationTime === 0 ? 16 : Math.min(timestamp - this.lastAnimationTime, 64);
         this.lastAnimationTime = timestamp;
         const stillAnimating = this.stepAnimations(timestamp, deltaMs);
-        if (this.gameStarted) {
+        if (this.gameStarted && !this.techTreeOpen) {
             this.gameState.tickFromTimestamp(timestamp);
         }
         const shouldAnimateLevelUpMarker = this.gameStarted && this.gameState.canLevelUpBase();
@@ -932,8 +985,9 @@ class IsoGrid {
         this.dom.baseLevel.textContent = `Level ${this.gameState.baseLevel}`;
         this.dom.baseXp.textContent = `${this.formatNumber(this.gameState.baseXp)} / ${xpRequired} XP`;
         this.dom.xpFill.style.width = `${Math.min(this.gameState.baseXp / xpRequired, 1) * 100}%`;
+        this.dom.centerButton.classList.toggle('level-ready', this.gameStarted && this.gameState.canLevelUpBase());
         this.updateSelectedPanel(selected);
-        this.updateSkillButtons();
+        this.updateTechTree();
     }
 
     getInspectedTile() {
@@ -946,13 +1000,14 @@ class IsoGrid {
             : 'No resource node';
 
         this.dom.tileTitle.textContent = selected.isHomeCore
-            ? 'Home Core'
+            ? 'Blue Core'
             : `Tile ${selected.x}, ${selected.y}`;
 
         if (!selected.isRevealed) {
             this.dom.tileDetails.textContent = 'Unrevealed territory.';
         } else if (selected.isHomeCore) {
-            this.dom.tileDetails.textContent = `Reveal radius ${this.gameState.getGlobalRevealRadius()}. Output +${this.formatRate(this.gameState.getHomeEnergyRate())} Energy/s.`;
+            const rates = this.gameState.getProductionRates();
+            this.dom.tileDetails.textContent = `Reveal radius ${this.gameState.getGlobalRevealRadius()}. Output +${this.formatRate(rates.homeEnergy)} Energy/s.`;
         } else {
             const costText = selected.isClaimed ? 'No claim cost' : `Cost ${selected.claimCost} Energy`;
             const statusText = selected.isClaimed ? 'Claimed' : selected.isAdjacent ? 'Adjacent frontier' : 'Needs connection';
@@ -975,30 +1030,38 @@ class IsoGrid {
     }
 
     getResourceBenefitText(resource, isClaimed) {
-        const productionMultiplier = 1 + this.gameState.skills.production * GameStateConstants.productionSkillBonus;
-        const rate = resource.rate * productionMultiplier;
+        const rate = resource.rate * this.gameState.getTechMultiplier(resource.type);
         const resourceName = this.capitalize(resource.type);
         const verb = isClaimed ? 'Producing' : 'Claim benefit';
 
         return `${resourceName} node T${resource.tier}. ${verb}: +${this.formatRate(rate)}/${resource.type === 'energy' ? 's Energy' : 's Research'}`;
     }
 
-    updateSkillButtons() {
+    updateTechTree() {
+        if (!this.dom.techButtons) {
+            return;
+        }
+
         const labels = {
-            expansion: this.dom.skillExpansion,
-            production: this.dom.skillProduction,
-            surveying: this.dom.skillSurveying
+            energy: this.dom.techEnergy,
+            research: this.dom.techResearch
         };
+        const maxLevel = this.gameState.getMaxTechLevel();
 
-        for (const button of this.dom.skillButtons) {
-            const skill = button.dataset.skill;
-            const level = this.gameState.skills[skill];
-            const cost = this.gameState.getSkillCost(skill);
+        this.dom.techTitle.textContent = `Level ${this.gameState.baseLevel} Tech Tree`;
+        this.dom.techPoints.textContent = `${this.formatNumber(this.gameState.research)} Research`;
+        this.dom.techAward.textContent = `Level-up award: +${this.gameState.lastLevelResearchAward} Research. Run resources reset; Blue Core level and tech remain.`;
 
-            labels[skill].textContent = level >= GameStateConstants.maxSkillLevel
-                ? `Level ${level} max`
-                : `Level ${level} - ${cost} Research`;
-            button.disabled = !this.gameState.canPurchaseSkill(skill);
+        for (const button of this.dom.techButtons) {
+            const tech = button.dataset.tech;
+            const level = this.gameState.techs[tech];
+            const cost = this.gameState.getTechCost(tech);
+            const multiplier = this.gameState.getTechMultiplier(tech);
+
+            labels[tech].textContent = level >= maxLevel
+                ? `Level ${level} max for Core ${this.gameState.baseLevel} - x${multiplier.toFixed(2)}`
+                : `Level ${level} - ${cost} Research - x${multiplier.toFixed(2)}`;
+            button.disabled = !this.gameState.canUpgradeTech(tech);
         }
     }
 

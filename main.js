@@ -1,3 +1,3 @@
-// Main game logic for Home Core
+// Main game logic for Blue Core
 
 // App coordination is handled in grid.js.

@@ -15,6 +15,7 @@
     --color-text-disabled: #77838c;
     --color-progress-track: rgba(255, 255, 255, 0.1);
     --color-progress-fill: #65d6a5;
+    --color-level-ready-border: #ffd45c;
     --color-start-button: rgba(38, 170, 218, 0.18);
     --color-start-button-hover: rgba(38, 170, 218, 0.3);
     --color-start-button-border: rgba(120, 220, 255, 0.74);
@@ -38,6 +39,7 @@
     --color-text-disabled: #78878e;
     --color-progress-track: rgba(16, 32, 39, 0.12);
     --color-progress-fill: #209866;
+    --color-level-ready-border: #d58a00;
     --color-start-button: rgba(22, 136, 190, 0.22);
     --color-start-button-hover: rgba(22, 136, 190, 0.34);
     --color-start-button-border: rgba(17, 122, 184, 0.58);
@@ -62,6 +64,7 @@
         --color-text-disabled: #78878e;
         --color-progress-track: rgba(16, 32, 39, 0.12);
         --color-progress-fill: #209866;
+        --color-level-ready-border: #d58a00;
         --color-start-button: rgba(22, 136, 190, 0.22);
         --color-start-button-hover: rgba(22, 136, 190, 0.34);
         --color-start-button-border: rgba(17, 122, 184, 0.58);
@@ -187,9 +190,7 @@ body, html {
 }
 
 #side-panel,
-#hud .hud-panel,
-#hud .hud-button,
-#skills-panel {
+#tech-panel {
     position: absolute;
     z-index: 10;
     background: var(--color-panel);
@@ -200,7 +201,6 @@ body, html {
 
 #hud,
 #side-panel,
-#research-dock,
 #center-button {
     opacity: 1;
     transition: opacity 220ms ease, visibility 220ms ease;
@@ -208,7 +208,6 @@ body, html {
 
 .pre-start #hud,
 .pre-start #side-panel,
-.pre-start #research-dock,
 .pre-start #center-button {
     visibility: hidden;
     opacity: 0;
@@ -248,24 +247,52 @@ body, html {
 .hud-panel {
     position: static;
     min-width: 104px;
+    background: var(--color-panel);
+    border: 1px solid var(--color-panel-border);
     border-radius: 6px;
+    box-shadow: 0 12px 28px var(--color-panel-shadow);
     padding: 10px 12px;
     box-sizing: border-box;
+    backdrop-filter: blur(1px);
     pointer-events: auto;
 }
 
-.resource-panel {
-    width: 132px;
+.resources-panel {
+    display: grid;
+    grid-template-columns: minmax(92px, 1fr) minmax(104px, 1fr);
+    align-items: center;
+    gap: 12px;
+    width: 310px;
+}
+
+.resource-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.resource-value {
+    min-width: 0;
 }
 
 .progress-panel {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
     flex: 1;
     min-width: 180px;
 }
 
+.progress-content {
+    flex: 1;
+    min-width: 0;
+}
+
 .hud-panel strong {
     display: block;
-    margin-top: 4px;
+    margin-top: 0;
     font-size: 20px;
     line-height: 1.1;
 }
@@ -276,9 +303,52 @@ body, html {
     font-size: 12px;
 }
 
+.progress-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.progress-header small {
+    min-width: 0;
+    margin-top: 0;
+}
+
+.progress-header strong {
+    flex: 0 0 auto;
+    margin-top: 0;
+    text-align: right;
+}
+
+.resource-glyph {
+    flex: 0 0 auto;
+    width: 30px;
+    height: 30px;
+    fill: none;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.energy-glyph {
+    fill: var(--color-text);
+    stroke: none;
+    stroke-width: 1.4;
+}
+
+.research-glyph {
+    color: var(--color-text);
+    stroke: currentColor;
+    stroke-width: 1.75;
+}
+
+.research-glyph circle {
+    fill: currentColor;
+}
+
 .xp-track {
     height: 5px;
-    margin-top: 10px;
+    margin-top: 7px;
     overflow: hidden;
     background: var(--color-progress-track);
     border-radius: 999px;
@@ -303,7 +373,7 @@ body, html {
 }
 
 #tile-title,
-#skills-panel h2 {
+#tech-panel h2 {
     margin: 0;
     font-size: 16px;
     letter-spacing: 0;
@@ -317,7 +387,8 @@ body, html {
 }
 
 #tile-action,
-.skill-button {
+.tech-button,
+#resume-run {
     width: 100%;
     min-height: 36px;
     border: 1px solid var(--color-control-border);
@@ -328,14 +399,13 @@ body, html {
 }
 
 #tile-action:disabled,
-.skill-button:disabled {
+.tech-button:disabled {
     color: var(--color-text-disabled);
     cursor: default;
     background: var(--color-control-disabled);
 }
 
-.hud-button,
-.research-button {
+.hud-button {
     position: static;
     display: grid;
     place-items: center;
@@ -352,14 +422,39 @@ body, html {
     pointer-events: auto;
 }
 
-.hud-button:hover,
-.research-button:hover,
-.research-button[aria-expanded="true"] {
+.progress-panel .home-button {
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    box-shadow: none;
+}
+
+.progress-panel .home-button svg {
+    width: 30px;
+    height: 30px;
+}
+
+.home-button.level-ready {
+    border-color: var(--color-level-ready-border, #ffd45c);
+    animation: core-level-ready-glow 1200ms ease-in-out infinite;
+}
+
+@keyframes core-level-ready-glow {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 212, 92, 0.18), 0 0 12px rgba(255, 196, 66, 0.28);
+    }
+
+    50% {
+        box-shadow: 0 0 0 5px rgba(255, 212, 92, 0.16), 0 0 24px rgba(255, 196, 66, 0.56);
+    }
+}
+
+.hud-button:hover {
     background: var(--color-panel-hover);
 }
 
-.hud-button svg,
-.research-button svg {
+.hud-button svg {
     width: 36px;
     height: 36px;
     fill: none;
@@ -390,35 +485,65 @@ body, html {
     stroke-width: 1.4;
 }
 
-.research-button circle {
-    fill: currentColor;
-}
-
-#research-dock {
-    position: relative;
-    z-index: 10;
+#tech-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 14;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, 0.24);
     pointer-events: auto;
 }
 
-#skills-panel {
-    left: 0;
-    bottom: 76px;
-    width: 280px;
-    border-radius: 6px;
-    padding: 12px;
-}
-
-#skills-panel[hidden] {
+#tech-overlay[hidden] {
     display: none;
 }
 
-.skill-button {
+#tech-panel {
+    position: static;
+    width: min(520px, calc(100vw - 40px));
+    border-radius: 6px;
+    padding: 16px;
+}
+
+.tech-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+#tech-points {
+    flex: 0 0 auto;
+    font-size: 18px;
+}
+
+#tech-award {
+    margin: 10px 0 14px;
+    color: var(--color-muted);
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.tech-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.tech-button {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-top: 8px;
-    padding: 7px 9px;
+    gap: 10px;
+    padding: 10px;
     text-align: left;
+}
+
+#resume-run {
+    margin-top: 12px;
 }
 
 @media (max-width: 760px) {
@@ -441,20 +566,20 @@ body, html {
         right: 10px;
     }
 
-    .hud-button,
-    .research-button {
+    .hud-button {
         width: 54px;
         height: 54px;
     }
 
-    .hud-button svg,
-    .research-button svg {
+    .hud-button svg {
         width: 30px;
         height: 30px;
     }
 
-    .resource-panel {
-        width: 104px;
+    .resources-panel {
+        grid-template-columns: minmax(82px, 1fr) minmax(94px, 1fr);
+        gap: 8px;
+        width: 232px;
     }
 
     .progress-panel {
@@ -465,9 +590,8 @@ body, html {
         padding: 8px 9px;
     }
 
-    #skills-panel {
-        bottom: 64px;
-        width: min(280px, calc(100vw - 20px));
+    .tech-grid {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -483,13 +607,19 @@ body, html {
 }
 
 @media (max-width: 360px) {
-    .hud-button,
-    .research-button {
+    .hud-button {
         width: 50px;
         height: 50px;
     }
 
-    .resource-panel {
-        width: 88px;
+    .resources-panel {
+        grid-template-columns: minmax(74px, 1fr) minmax(84px, 1fr);
+        width: 204px;
     }
+
+    .resource-glyph {
+        width: 26px;
+        height: 26px;
+    }
+
 }

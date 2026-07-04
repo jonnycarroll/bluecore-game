@@ -1,4 +1,4 @@
-# Home Core
+# Blue Core
 
 A small browser-based idle/exploration builder built with plain HTML, CSS, and JavaScript.
 
@@ -7,16 +7,16 @@ A small browser-based idle/exploration builder built with plain HTML, CSS, and J
 - Full-screen isometric grid rendered with HTML5 Canvas
 - Drag panning with mouse or touch
 - Hover highlight and click selection for the tile under the pointer
-- Home Core at grid coordinate `(0, 0)` with passive Energy production
+- Blue Core at grid coordinate `(0, 0)` with passive Energy production
 - Connected tile claiming with Energy costs that scale by distance
 - Deterministic Energy and Research resource nodes across the map
-- Base XP from production, Home Core level-ups, and expanding reveal radius
-- Three-branch Research skill tree for Expansion, Production, and Surveying
+- Base XP from production, Blue Core level-ups, and expanding reveal radius
+- Level-up tech tree with Energy and Research multiplier upgrades
 - Welcome start state that delays HUD display and production until the run begins
-- Bottom dock for resources, Base XP, Home Core return, and Research skill purchases
+- Bottom dock for resources, Base XP, and Blue Core return
 - Top-corner panels for selected tile details and appearance controls
 - Tokenized light/dark appearance that follows system preferences or a saved choice
-- Blue viewport-edge marker and Home button that point back to the Home Core
+- Blue viewport-edge marker and Blue Core button that point back to the Blue Core
 - Device-pixel-ratio aware canvas rendering for sharper high-DPI displays
 - Small scene/material/rendering modules for tile and object layout
 
@@ -44,7 +44,7 @@ npm test
 index.html    Browser entrypoint
 styles.css    Full-screen canvas, HUD, and panel styles
 appearance.js Theme preference, UI tokens, and canvas color tokens
-game-state.js Idle builder rules, state, production, reveal, and skills
+game-state.js Idle builder rules, state, production, reveal, and tech upgrades
 iso-math.js   Isometric projection, inverse projection, and tile hit testing
 materials.js  Render material palette for isometric objects
 object-layout.js Object sorting and viewport culling helpers
@@ -64,9 +64,9 @@ tests/        Small Node-based regression tests
 - Hover over tiles to highlight them.
 - Hover tiles to inspect claim costs, connection state, and resource benefits.
 - Click a revealed adjacent tile to claim it when affordable.
-- Click the Home Core or selected-tile button to level up when Base XP is full.
-- Use the atom control in the bottom dock to open Research skill purchases.
-- Use the Blue Core control in the bottom dock to animate back to the Home Core.
+- Click the Blue Core or selected-tile button to level up when Base XP is full.
+- Spend Research in the tech tree shown after each Blue Core level-up.
+- Use the Blue Core control in the bottom dock to return to the Blue Core.
 - Use the theme control to cycle between system, light, and dark appearance.
 
 ## Current Scope

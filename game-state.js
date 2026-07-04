@@ -1,11 +1,9 @@
 const GameStateConstants = {
     startingEnergy: 40,
     startingResearch: 0,
-    expansionSkillDiscount: 0.08,
-    productionSkillBonus: 0.25,
-    surveyRadii: [0, 2, 3, 4],
-    maxSkillLevel: 3,
-    skillCosts: [20, 55, 120]
+    techBonus: 0.25,
+    techBaseCost: 5,
+    levelResearchAward: 5
 };
 
 class IdleGameState {
@@ -17,11 +15,11 @@ class IdleGameState {
         this.selectedTile = { x: 0, y: 0 };
         this.claimedTiles = new Set([IdleGameState.tileKey(0, 0)]);
         this.claimedTileList = [{ x: 0, y: 0 }];
-        this.skills = {
-            expansion: 0,
-            production: 0,
-            surveying: 0
+        this.techs = {
+            energy: 0,
+            research: 0
         };
+        this.lastLevelResearchAward = 0;
         this.lastTick = 0;
         this.productionRates = null;
         this.productionRatesDirty = true;
@@ -92,8 +90,8 @@ class IdleGameState {
         return 5 + this.baseLevel * 4;
     }
 
-    getSurveyRadius() {
-        return GameStateConstants.surveyRadii[this.skills.surveying];
+    getMaxTechLevel() {
+        return Math.max(0, this.baseLevel - 1);
     }
 
     getHomeEnergyRate() {
@@ -124,20 +122,6 @@ class IdleGameState {
             return true;
         }
 
-        const surveyRadius = this.getSurveyRadius();
-        if (surveyRadius <= 0) {
-            return false;
-        }
-
-        for (let dx = -surveyRadius; dx <= surveyRadius; dx++) {
-            const yRange = surveyRadius - Math.abs(dx);
-            for (let dy = -yRange; dy <= yRange; dy++) {
-                if (this.isClaimed(x + dx, y + dy)) {
-                    return true;
-                }
-            }
-        }
-
         return false;
     }
 
@@ -146,10 +130,7 @@ class IdleGameState {
             return 0;
         }
 
-        const baseCost = 12 + IdleGameState.manhattanDistance(x, y) * 4;
-        const discount = 1 - this.skills.expansion * GameStateConstants.expansionSkillDiscount;
-
-        return Math.max(1, Math.ceil(baseCost * discount));
+        return 12 + IdleGameState.manhattanDistance(x, y) * 4;
     }
 
     canClaim(x, y) {
@@ -205,7 +186,8 @@ class IdleGameState {
             resourceEnergy: 0,
             resourceResearch: 0
         };
-        const productionMultiplier = 1 + this.skills.production * GameStateConstants.productionSkillBonus;
+        const energyMultiplier = this.getTechMultiplier('energy');
+        const researchMultiplier = this.getTechMultiplier('research');
 
         for (const tile of this.claimedTileList) {
             const resource = IdleGameState.getResourceAt(tile.x, tile.y);
@@ -213,16 +195,19 @@ class IdleGameState {
                 continue;
             }
 
-            const rate = resource.rate * productionMultiplier;
             if (resource.type === 'energy') {
+                const rate = resource.rate * energyMultiplier;
                 rates.energy += rate;
                 rates.resourceEnergy += rate;
             } else if (resource.type === 'research') {
+                const rate = resource.rate * researchMultiplier;
                 rates.research += rate;
                 rates.resourceResearch += rate;
             }
         }
 
+        rates.homeEnergy *= energyMultiplier;
+        rates.energy = rates.homeEnergy + rates.resourceEnergy;
         rates.baseXp = rates.homeEnergy * 0.2 + rates.resourceEnergy * 0.6 + rates.resourceResearch * 4;
         this.productionRates = rates;
         this.productionRatesDirty = false;
@@ -262,34 +247,53 @@ class IdleGameState {
             return false;
         }
 
-        this.baseXp -= this.getBaseXpRequired();
         this.baseLevel += 1;
-        this.markProductionDirty();
+        this.lastLevelResearchAward = this.getLevelResearchAward();
+        this.research += this.lastLevelResearchAward;
+        this.resetRunResources();
 
         return true;
     }
 
-    canPurchaseSkill(skillName) {
-        return Object.prototype.hasOwnProperty.call(this.skills, skillName) &&
-            this.skills[skillName] < GameStateConstants.maxSkillLevel &&
-            this.research >= this.getSkillCost(skillName);
+    resetRunResources() {
+        this.energy = GameStateConstants.startingEnergy;
+        this.baseXp = 0;
+        this.selectedTile = { x: 0, y: 0 };
+        this.claimedTiles = new Set([IdleGameState.tileKey(0, 0)]);
+        this.claimedTileList = [{ x: 0, y: 0 }];
+        this.lastTick = 0;
+        this.markProductionDirty();
     }
 
-    getSkillCost(skillName) {
-        if (!Object.prototype.hasOwnProperty.call(this.skills, skillName)) {
+    getLevelResearchAward() {
+        return this.baseLevel * GameStateConstants.levelResearchAward;
+    }
+
+    getTechMultiplier(techName) {
+        return 1 + (this.techs[techName] || 0) * GameStateConstants.techBonus;
+    }
+
+    canUpgradeTech(techName) {
+        return Object.prototype.hasOwnProperty.call(this.techs, techName) &&
+            this.techs[techName] < this.getMaxTechLevel() &&
+            this.research >= this.getTechCost(techName);
+    }
+
+    getTechCost(techName) {
+        if (!Object.prototype.hasOwnProperty.call(this.techs, techName)) {
             return Infinity;
         }
 
-        return GameStateConstants.skillCosts[this.skills[skillName]] || Infinity;
+        return GameStateConstants.techBaseCost * (this.techs[techName] + 1);
     }
 
-    purchaseSkill(skillName) {
-        if (!this.canPurchaseSkill(skillName)) {
+    upgradeTech(techName) {
+        if (!this.canUpgradeTech(techName)) {
             return false;
         }
 
-        this.research -= this.getSkillCost(skillName);
-        this.skills[skillName] += 1;
+        this.research -= this.getTechCost(techName);
+        this.techs[techName] += 1;
         this.markProductionDirty();
 
         return true;
