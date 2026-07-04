@@ -1,5 +1,5 @@
 {
-  "name": "emd-sim-gym",
+  "name": "home-core",
   "version": "1.0.0",
   "description": "A browser-based idle exploration builder on an isometric grid",
   "main": "index.html",

@@ -1,4 +1,4 @@
-# EMD Sim Gym
+# Home Core
 
 A small browser-based idle/exploration builder built with plain HTML, CSS, and JavaScript.
 

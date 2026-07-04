@@ -1,3 +1,3 @@
-// Main game logic for EMD Sim Gym
+// Main game logic for Home Core
 
 // App coordination is handled in grid.js.

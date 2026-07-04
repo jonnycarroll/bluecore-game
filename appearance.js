@@ -1,5 +1,6 @@
 const AppAppearance = (() => {
-    const storageKey = 'emd-sim-gym-theme';
+    const legacyStorageKey = 'emd-sim-gym-theme';
+    const storageKey = 'home-core-theme';
     const preferences = ['system', 'light', 'dark'];
     const darkTokens = {
         canvasBackground: '#050607',
@@ -78,6 +79,10 @@ const AppAppearance = (() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
     function getStoredPreference() {
+        if (!localStorage.getItem(storageKey) && localStorage.getItem(legacyStorageKey)) {
+            localStorage.setItem(storageKey, localStorage.getItem(legacyStorageKey));
+        }
+
         const stored = localStorage.getItem(storageKey);
         return preferences.includes(stored) ? stored : 'system';
     }

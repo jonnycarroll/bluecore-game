@@ -1,4 +1,4 @@
-// Isometric grid system for EMD Sim Gym
+// Isometric grid system for Home Core
 
 class IsoGrid {
     constructor(canvas) {
