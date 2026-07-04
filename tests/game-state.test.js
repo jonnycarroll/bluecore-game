@@ -35,19 +35,21 @@ assert.equal(Math.round(game.energy), 24);
 assert.equal(game.canClaim(3, 0), false);
 
 const surveyGame = new IdleGameState();
-surveyGame.claimedTiles.add(IdleGameState.tileKey(9, 0));
+surveyGame.addClaimedTile(9, 0);
 assert.equal(surveyGame.isRevealed(11, 0), false);
 surveyGame.skills.surveying = 1;
 assert.equal(surveyGame.isRevealed(11, 0), true);
 
 const productionGame = new IdleGameState();
-productionGame.claimedTiles.add(IdleGameState.tileKey(3, 1));
+productionGame.addClaimedTile(3, 1);
 const resource = IdleGameState.getResourceAt(3, 1);
 const rates = productionGame.getProductionRates();
 assert.ok(Math.abs(rates.homeEnergy - 0.6) < 0.000001);
 assert.ok(rates.energy >= rates.homeEnergy);
+assert.equal(productionGame.getProductionRates(), rates);
 
 productionGame.skills.production = 1;
+productionGame.markProductionDirty();
 const boostedRates = productionGame.getProductionRates();
 if (resource.type === 'energy') {
     assert.equal(boostedRates.resourceEnergy, rates.resourceEnergy * 1.25);

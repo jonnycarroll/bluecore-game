@@ -16,12 +16,15 @@ class IdleGameState {
         this.baseLevel = 1;
         this.selectedTile = { x: 0, y: 0 };
         this.claimedTiles = new Set([IdleGameState.tileKey(0, 0)]);
+        this.claimedTileList = [{ x: 0, y: 0 }];
         this.skills = {
             expansion: 0,
             production: 0,
             surveying: 0
         };
         this.lastTick = 0;
+        this.productionRates = null;
+        this.productionRatesDirty = true;
     }
 
     static tileKey(x, y) {
@@ -49,39 +52,40 @@ class IdleGameState {
     }
 
     static getResourceAt(x, y) {
+        const key = IdleGameState.tileKey(x, y);
+        if (IdleGameState.resourceCache.has(key)) {
+            return IdleGameState.resourceCache.get(key);
+        }
+
         const distance = IdleGameState.manhattanDistance(x, y);
+        let resource = null;
 
-        if (distance < 4 || (x === 0 && y === 0)) {
-            return null;
-        }
+        if (distance >= 4 && (x !== 0 || y !== 0)) {
+            const roll = IdleGameState.rollCoordinate(x, y);
 
-        const roll = IdleGameState.rollCoordinate(x, y);
-
-        if (distance <= 7) {
-            return roll < 0.1 ? { type: 'energy', tier: 1, rate: 1.2 } : null;
-        }
-
-        if (distance <= 13) {
-            if (roll < 0.05) {
-                return { type: 'research', tier: 1, rate: 0.25 };
+            if (distance <= 7) {
+                resource = roll < 0.1 ? { type: 'energy', tier: 1, rate: 1.2 } : null;
+            } else if (distance <= 13) {
+                if (roll < 0.05) {
+                    resource = { type: 'research', tier: 1, rate: 0.25 };
+                } else if (roll < 0.2) {
+                    resource = { type: 'energy', tier: 2, rate: 2.6 };
+                }
+            } else if (distance <= 21) {
+                if (roll < 0.08) {
+                    resource = { type: 'research', tier: 2, rate: 0.5 };
+                } else if (roll < 0.25) {
+                    resource = { type: 'energy', tier: 3, rate: 4.4 };
+                }
+            } else if (roll < 0.06) {
+                resource = { type: 'research', tier: 3, rate: 1 };
+            } else if (roll < 0.22) {
+                resource = { type: 'energy', tier: 4, rate: 7 };
             }
-
-            return roll < 0.2 ? { type: 'energy', tier: 2, rate: 2.6 } : null;
         }
 
-        if (distance <= 21) {
-            if (roll < 0.08) {
-                return { type: 'research', tier: 2, rate: 0.5 };
-            }
-
-            return roll < 0.25 ? { type: 'energy', tier: 3, rate: 4.4 } : null;
-        }
-
-        if (roll < 0.06) {
-            return { type: 'research', tier: 3, rate: 1 };
-        }
-
-        return roll < 0.22 ? { type: 'energy', tier: 4, rate: 7 } : null;
+        IdleGameState.resourceCache.set(key, resource);
+        return resource;
     }
 
     getGlobalRevealRadius() {
@@ -125,10 +129,12 @@ class IdleGameState {
             return false;
         }
 
-        for (const key of this.claimedTiles) {
-            const [claimedX, claimedY] = key.split(',').map(Number);
-            if (Math.abs(claimedX - x) + Math.abs(claimedY - y) <= surveyRadius) {
-                return true;
+        for (let dx = -surveyRadius; dx <= surveyRadius; dx++) {
+            const yRange = surveyRadius - Math.abs(dx);
+            for (let dy = -yRange; dy <= yRange; dy++) {
+                if (this.isClaimed(x + dx, y + dy)) {
+                    return true;
+                }
             }
         }
 
@@ -153,13 +159,30 @@ class IdleGameState {
             this.energy >= this.getClaimCost(x, y);
     }
 
+    markProductionDirty() {
+        this.productionRatesDirty = true;
+    }
+
+    addClaimedTile(x, y) {
+        const key = IdleGameState.tileKey(x, y);
+        if (this.claimedTiles.has(key)) {
+            return false;
+        }
+
+        this.claimedTiles.add(key);
+        this.claimedTileList.push({ x, y });
+        this.markProductionDirty();
+
+        return true;
+    }
+
     claimTile(x, y) {
         if (!this.canClaim(x, y)) {
             return false;
         }
 
         this.energy -= this.getClaimCost(x, y);
-        this.claimedTiles.add(IdleGameState.tileKey(x, y));
+        this.addClaimedTile(x, y);
         this.selectedTile = { x, y };
 
         return true;
@@ -170,6 +193,10 @@ class IdleGameState {
     }
 
     getProductionRates() {
+        if (!this.productionRatesDirty && this.productionRates) {
+            return this.productionRates;
+        }
+
         const rates = {
             energy: this.getHomeEnergyRate(),
             research: 0,
@@ -180,9 +207,8 @@ class IdleGameState {
         };
         const productionMultiplier = 1 + this.skills.production * GameStateConstants.productionSkillBonus;
 
-        for (const key of this.claimedTiles) {
-            const [x, y] = key.split(',').map(Number);
-            const resource = IdleGameState.getResourceAt(x, y);
+        for (const tile of this.claimedTileList) {
+            const resource = IdleGameState.getResourceAt(tile.x, tile.y);
             if (!resource) {
                 continue;
             }
@@ -198,6 +224,8 @@ class IdleGameState {
         }
 
         rates.baseXp = rates.homeEnergy * 0.2 + rates.resourceEnergy * 0.6 + rates.resourceResearch * 4;
+        this.productionRates = rates;
+        this.productionRatesDirty = false;
 
         return rates;
     }
@@ -236,6 +264,7 @@ class IdleGameState {
 
         this.baseXp -= this.getBaseXpRequired();
         this.baseLevel += 1;
+        this.markProductionDirty();
 
         return true;
     }
@@ -261,6 +290,7 @@ class IdleGameState {
 
         this.research -= this.getSkillCost(skillName);
         this.skills[skillName] += 1;
+        this.markProductionDirty();
 
         return true;
     }
@@ -288,6 +318,8 @@ class IdleGameState {
         };
     }
 }
+
+IdleGameState.resourceCache = new Map();
 
 if (typeof module !== 'undefined') {
     module.exports = {

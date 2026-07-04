@@ -34,6 +34,13 @@ class IsoGrid {
         this.centerAnimation = null;
         this.animationFrame = null;
         this.lastAnimationTime = 0;
+        this.renderRequested = true;
+        this.hudUpdateRequested = true;
+        this.lastCanvasRenderTime = 0;
+        this.lastHudUpdateTime = 0;
+        this.idleCanvasRenderInterval = 500;
+        this.hudUpdateInterval = 120;
+        this.resourceIconCache = new Map();
         
         // Set canvas size to full window
         this.resizeCanvas();
@@ -80,7 +87,7 @@ class IsoGrid {
         this.canvas.style.width = `${this.viewportWidth}px`;
         this.canvas.style.height = `${this.viewportHeight}px`;
         this.ctx.setTransform(this.pixelRatio, 0, 0, this.pixelRatio, 0, 0);
-        this.render();
+        this.requestRender();
     }
     
     setupEventListeners() {
@@ -103,10 +110,20 @@ class IsoGrid {
         for (const button of this.dom.skillButtons) {
             button.addEventListener('click', () => {
                 this.gameState.purchaseSkill(button.dataset.skill);
-                this.updateHud();
-                this.render();
+                this.requestHudUpdate();
+                this.requestRender();
             });
         }
+    }
+
+    requestRender() {
+        this.renderRequested = true;
+        this.startAnimationLoop();
+    }
+
+    requestHudUpdate() {
+        this.hudUpdateRequested = true;
+        this.startAnimationLoop();
     }
     
     handleMouseDown(e) {
@@ -135,7 +152,7 @@ class IsoGrid {
             this.lastX = currentX;
             this.lastY = currentY;
             
-            this.render();
+            this.requestRender();
         } else {
             // Check for hover
             const rect = this.canvas.getBoundingClientRect();
@@ -184,7 +201,7 @@ class IsoGrid {
             this.lastX = currentX;
             this.lastY = currentY;
             
-            this.render();
+            this.requestRender();
         }
     }
     
@@ -222,8 +239,8 @@ class IsoGrid {
             this.gameState.selectTile(selected.x, selected.y);
         }
 
-        this.updateHud();
-        this.render();
+        this.requestHudUpdate();
+        this.requestRender();
     }
     
     centerView(animate = true) {
@@ -234,7 +251,7 @@ class IsoGrid {
             this.stopCenterAnimation();
             this.offsetX = targetX;
             this.offsetY = targetY;
-            this.render();
+            this.requestRender();
             return;
         }
 
@@ -322,7 +339,7 @@ class IsoGrid {
         }
 
         this.startAnimationLoop();
-        this.updateHud();
+        this.requestHudUpdate();
     }
 
     setHoverAnimationTarget(tile, targetAlpha) {
@@ -368,11 +385,27 @@ class IsoGrid {
         this.animationFrame = null;
         const deltaMs = this.lastAnimationTime === 0 ? 16 : Math.min(timestamp - this.lastAnimationTime, 64);
         this.lastAnimationTime = timestamp;
-        this.stepAnimations(timestamp, deltaMs);
+        const stillAnimating = this.stepAnimations(timestamp, deltaMs);
         this.gameState.tickFromTimestamp(timestamp);
 
-        this.render();
-        this.updateHud();
+        const shouldRender = this.renderRequested ||
+            stillAnimating ||
+            timestamp - this.lastCanvasRenderTime >= this.idleCanvasRenderInterval;
+        const shouldUpdateHud = this.hudUpdateRequested ||
+            timestamp - this.lastHudUpdateTime >= this.hudUpdateInterval;
+
+        if (shouldRender) {
+            this.render();
+            this.renderRequested = false;
+            this.lastCanvasRenderTime = timestamp;
+        }
+
+        if (shouldUpdateHud) {
+            this.updateHud();
+            this.hudUpdateRequested = false;
+            this.lastHudUpdateTime = timestamp;
+        }
+
         this.startAnimationLoop();
     }
 
@@ -617,19 +650,41 @@ class IsoGrid {
         const alpha = claimed ? 1 : 0.68;
         const lift = 13 + resource.tier * 3;
         const iconY = screenPos.y - lift;
+        const icon = this.getResourceIcon(resource, claimed);
 
         this.ctx.save();
         this.ctx.globalAlpha = alpha;
         this.drawResourceShadow(screenPos.x, screenPos.y - 2, claimed);
+        this.ctx.drawImage(icon, screenPos.x - icon.width / 2, iconY - icon.height / 2);
+        this.ctx.restore();
+    }
 
-        if (resource.type === 'energy') {
-            this.drawSparkIcon(screenPos.x, iconY, resource.tier, claimed);
-        } else {
-            this.drawAtomIcon(screenPos.x, iconY, resource.tier, claimed);
+    getResourceIcon(resource, claimed) {
+        const key = `${resource.type}:${resource.tier}:${claimed ? 'claimed' : 'open'}`;
+        const cachedIcon = this.resourceIconCache.get(key);
+        if (cachedIcon) {
+            return cachedIcon;
         }
 
-        this.drawTierPips(screenPos.x, iconY + 13 + resource.tier, resource.tier, resource.type, claimed);
-        this.ctx.restore();
+        const icon = document.createElement('canvas');
+        icon.width = 56;
+        icon.height = 56;
+        const previousCtx = this.ctx;
+        this.ctx = icon.getContext('2d');
+
+        const centerX = icon.width / 2;
+        const centerY = icon.height / 2 - 3;
+        if (resource.type === 'energy') {
+            this.drawSparkIcon(centerX, centerY, resource.tier, claimed);
+        } else {
+            this.drawAtomIcon(centerX, centerY, resource.tier, claimed);
+        }
+
+        this.drawTierPips(centerX, centerY + 13 + resource.tier, resource.tier, resource.type, claimed);
+        this.ctx = previousCtx;
+        this.resourceIconCache.set(key, icon);
+
+        return icon;
     }
 
     drawResourceShadow(x, y, claimed) {
