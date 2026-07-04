@@ -429,8 +429,13 @@ body, html {
 }
 
 .home-button.level-ready {
+    background: rgba(255, 196, 66, 0.2);
     border-color: var(--color-level-ready-border, #ffd45c);
     animation: core-level-ready-glow 1200ms ease-in-out infinite;
+}
+
+.home-button.level-ready:hover {
+    background: rgba(255, 196, 66, 0.3);
 }
 
 @keyframes core-level-ready-glow {
