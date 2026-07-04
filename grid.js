@@ -116,6 +116,9 @@ class IsoGrid {
             hoverFallback: 'rgba(255, 255, 255, ',
             homeMarkerFill: 'rgba(0, 160, 255, 0.95)',
             homeMarkerStroke: 'rgba(220, 245, 255, 0.9)',
+            levelUpMarkerFill: '#ffd45c',
+            levelUpMarkerStroke: '#5c3a00',
+            levelUpMarkerGlow: 'rgba(255, 196, 66, 0.34)',
             shadowClaimed: 'rgba(0, 0, 0, 0.34)',
             shadowOpen: 'rgba(0, 0, 0, 0.2)',
             energyClaimed: '#9df7bd',
@@ -539,9 +542,11 @@ class IsoGrid {
         if (this.gameStarted) {
             this.gameState.tickFromTimestamp(timestamp);
         }
+        const shouldAnimateLevelUpMarker = this.gameStarted && this.gameState.canLevelUpBase();
 
         const shouldRender = this.renderRequested ||
             stillAnimating ||
+            shouldAnimateLevelUpMarker ||
             timestamp - this.lastCanvasRenderTime >= this.idleCanvasRenderInterval;
         const shouldUpdateHud = this.hudUpdateRequested ||
             timestamp - this.lastHudUpdateTime >= this.hudUpdateInterval;
@@ -629,6 +634,7 @@ class IsoGrid {
         }
 
         this.drawObjects();
+        this.drawLevelUpMarker();
         this.drawTileOverlays(startX, endX, startY, endY);
         this.drawCenterDirectionMarker();
     }
@@ -705,6 +711,12 @@ class IsoGrid {
     }
 
     getTileBaseColor(x, y) {
+        if (!this.gameStarted) {
+            return this.gameState.isHomeCore(x, y)
+                ? this.themeTokens.tileHome
+                : this.themeTokens.tileRevealed;
+        }
+
         if (!this.gameState.isRevealed(x, y)) {
             return this.themeTokens.tileUnrevealed;
         }
@@ -769,7 +781,7 @@ class IsoGrid {
             type: 'cuboid',
             x: coreTile.x,
             y: coreTile.y,
-            height: 12,
+            height: this.getCoreLevelHeight(),
             levels: this.gameState.baseLevel,
             material: 'blueBlock'
         }];
@@ -782,6 +794,41 @@ class IsoGrid {
         });
     }
 
+    getCoreLevelHeight() {
+        return 12;
+    }
+
+    drawLevelUpMarker() {
+        if (!this.gameStarted || !this.gameState.canLevelUpBase()) {
+            return;
+        }
+
+        const screenPos = this.getTileScreenPosition(0, 0);
+        const bob = Math.sin(this.lastAnimationTime / 260) * 3;
+        const x = screenPos.x;
+        const stackTopY = screenPos.y - this.gameState.baseLevel * this.getCoreLevelHeight() - this.tileHeight / 2;
+        const y = stackTopY - this.tileHeight / 4 + bob;
+
+        this.ctx.save();
+        this.ctx.shadowColor = this.themeTokens.levelUpMarkerGlow;
+        this.ctx.shadowBlur = 12;
+        this.ctx.fillStyle = this.themeTokens.levelUpMarkerFill;
+        this.ctx.strokeStyle = this.themeTokens.levelUpMarkerStroke;
+        this.ctx.lineWidth = 2;
+        this.ctx.lineJoin = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(x - 9, y + 5);
+        this.ctx.lineTo(x, y - 6);
+        this.ctx.lineTo(x + 9, y + 5);
+        this.ctx.lineTo(x + 5, y + 5);
+        this.ctx.lineTo(x, y - 1);
+        this.ctx.lineTo(x - 5, y + 5);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.restore();
+    }
+
     drawTileOverlays(startX, endX, startY, endY) {
         for (let y = startY; y < endY; y++) {
             for (let x = startX; x < endX; x++) {
@@ -791,6 +838,10 @@ class IsoGrid {
     }
 
     drawResourceMarker(x, y) {
+        if (!this.gameStarted) {
+            return;
+        }
+
         if (!this.gameState.isRevealed(x, y)) {
             return;
         }
