@@ -45,6 +45,7 @@ class IsoGrid {
         this.hudUpdateInterval = 120;
         this.gameStarted = false;
         this.techTreeOpen = false;
+        this.isMobilePointer = this.getIsMobilePointer();
         
         // Set canvas size to full window
         this.resizeCanvas();
@@ -122,6 +123,7 @@ class IsoGrid {
     }
     
     resizeCanvas() {
+        this.isMobilePointer = this.getIsMobilePointer();
         this.pixelRatio = window.devicePixelRatio || 1;
         this.viewportWidth = window.innerWidth;
         this.viewportHeight = window.innerHeight;
@@ -572,13 +574,13 @@ class IsoGrid {
         return !!a && !!b && a.x === b.x && a.y === b.y;
     }
 
+    getIsMobilePointer() {
+        return window.matchMedia && window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    }
+
     getHoverAlphaForTile(x, y) {
         const animation = this.hoverAnimations.find((entry) => entry.tile.x === x && entry.tile.y === y);
-        const selectedAlpha = this.gameStarted && this.gameState.selectedTile.x === x && this.gameState.selectedTile.y === y
-            ? 0.45
-            : 0;
-
-        return Math.max(animation ? animation.alpha : 0, selectedAlpha);
+        return animation ? animation.alpha : 0;
     }
 
     stopCenterAnimation() {
@@ -827,13 +829,20 @@ class IsoGrid {
         const fillStyle = hoverAlpha > 0
             ? this.getHoverFillStyle(baseColor, hoverAlpha)
             : this.getBaseFillStyle(baseColor);
+        const isActiveMobileTile = this.gameStarted &&
+            this.isMobilePointer &&
+            this.gameState.selectedTile.x === x &&
+            this.gameState.selectedTile.y === y;
 
         this.tileRenderer.drawTile(x, y, {
             offsetX: this.offsetX,
             offsetY: this.offsetY,
             width: this.viewportWidth,
             height: this.viewportHeight
-        }, fillStyle);
+        }, fillStyle, {
+            activeStrokeStyle: isActiveMobileTile ? this.themeTokens.activeTileStroke : null,
+            activeLineWidth: 4
+        });
     }
 
     getSceneObjects() {

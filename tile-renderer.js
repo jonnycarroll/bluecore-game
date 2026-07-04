@@ -8,7 +8,7 @@ class IsoTileRenderer {
         this.strokeStyle = 'rgba(0, 0, 0, 0.75)';
     }
 
-    drawTile(tileX, tileY, viewport, fillStyle) {
+    drawTile(tileX, tileY, viewport, fillStyle, options = {}) {
         const screenPos = this.isoMath.getTileScreenPosition(tileX, tileY, viewport.offsetX, viewport.offsetY);
 
         if (!this.isTileNearViewport(screenPos, viewport.width, viewport.height)) {
@@ -29,6 +29,12 @@ class IsoTileRenderer {
         this.ctx.strokeStyle = this.strokeStyle;
         this.ctx.lineWidth = 1;
         this.ctx.stroke();
+
+        if (options.activeStrokeStyle) {
+            this.ctx.strokeStyle = options.activeStrokeStyle;
+            this.ctx.lineWidth = options.activeLineWidth || 3;
+            this.ctx.stroke();
+        }
     }
 
     isTileNearViewport(screenPos, viewportWidth, viewportHeight) {
