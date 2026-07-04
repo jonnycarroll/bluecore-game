@@ -807,7 +807,7 @@ class IsoGrid {
         const bob = Math.sin(this.lastAnimationTime / 260) * 3;
         const x = screenPos.x;
         const stackTopY = screenPos.y - this.gameState.baseLevel * this.getCoreLevelHeight() - this.tileHeight / 2;
-        const y = stackTopY - this.tileHeight / 4 + bob;
+        const y = stackTopY + this.tileHeight / 8 + bob;
 
         this.ctx.save();
         this.ctx.shadowColor = this.themeTokens.levelUpMarkerGlow;
