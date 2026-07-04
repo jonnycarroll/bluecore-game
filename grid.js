@@ -11,7 +11,9 @@ class IsoGrid {
         this.tileHeight = 30;
         this.isoMath = new IsoMath(this.tileWidth, this.tileHeight);
         this.materials = IsoMaterials;
+        this.themeTokens = this.getThemeTokens();
         this.tileRenderer = new IsoTileRenderer(this.ctx, this.isoMath, this.tileWidth, this.tileHeight);
+        this.glyphRenderer = new MapGlyphRenderer(this.themeTokens);
         this.objectRenderer = new IsoObjectRenderer(
             this.ctx,
             this.isoMath,
@@ -21,7 +23,6 @@ class IsoGrid {
         );
         this.gameState = new IdleGameState();
         this.scene = IsoScene.createDefault();
-        this.themeTokens = this.getThemeTokens();
         this.offsetX = 0;
         this.offsetY = 0;
         this.isDragging = false;
@@ -41,7 +42,6 @@ class IsoGrid {
         this.lastHudUpdateTime = 0;
         this.idleCanvasRenderInterval = 500;
         this.hudUpdateInterval = 120;
-        this.resourceIconCache = new Map();
         this.gameStarted = false;
         
         // Set canvas size to full window
@@ -92,7 +92,6 @@ class IsoGrid {
 
         window.addEventListener('appearancechange', (event) => {
             this.applyThemeTokens(event.detail.tokens);
-            this.resourceIconCache.clear();
             this.requestRender();
         });
     }
@@ -139,6 +138,7 @@ class IsoGrid {
         this.materials = tokens.materials;
         this.tileRenderer.defaultFillStyle = tokens.tileDefault;
         this.tileRenderer.strokeStyle = tokens.tileStroke;
+        this.glyphRenderer.setTokens(tokens);
         this.objectRenderer.materials = tokens.materials;
     }
     
@@ -752,126 +752,7 @@ class IsoGrid {
 
         const screenPos = this.getTileScreenPosition(x, y);
         const claimed = this.gameState.isClaimed(x, y);
-        const alpha = claimed ? 1 : 0.68;
-        const lift = 13 + resource.tier * 3;
-        const iconY = screenPos.y - lift;
-        const icon = this.getResourceIcon(resource, claimed);
-
-        this.ctx.save();
-        this.ctx.globalAlpha = alpha;
-        this.drawResourceShadow(screenPos.x, screenPos.y - 2, claimed);
-        this.ctx.drawImage(icon, screenPos.x - icon.width / 2, iconY - icon.height / 2);
-        this.ctx.restore();
-    }
-
-    getResourceIcon(resource, claimed) {
-        const key = `${resource.type}:${resource.tier}:${claimed ? 'claimed' : 'open'}`;
-        const cachedIcon = this.resourceIconCache.get(key);
-        if (cachedIcon) {
-            return cachedIcon;
-        }
-
-        const icon = document.createElement('canvas');
-        icon.width = 56;
-        icon.height = 56;
-        const previousCtx = this.ctx;
-        this.ctx = icon.getContext('2d');
-
-        const centerX = icon.width / 2;
-        const centerY = icon.height / 2 - 3;
-        if (resource.type === 'energy') {
-            this.drawSparkIcon(centerX, centerY, resource.tier, claimed);
-        } else {
-            this.drawAtomIcon(centerX, centerY, resource.tier, claimed);
-        }
-
-        this.drawTierPips(centerX, centerY + 13 + resource.tier, resource.tier, resource.type, claimed);
-        this.ctx = previousCtx;
-        this.resourceIconCache.set(key, icon);
-
-        return icon;
-    }
-
-    drawResourceShadow(x, y, claimed) {
-        this.ctx.beginPath();
-        this.ctx.ellipse(x, y, claimed ? 9 : 7, claimed ? 4 : 3, 0, 0, Math.PI * 2);
-        this.ctx.fillStyle = claimed ? this.themeTokens.shadowClaimed : this.themeTokens.shadowOpen;
-        this.ctx.fill();
-    }
-
-    drawSparkIcon(x, y, tier, claimed) {
-        const size = 8 + tier * 1.8;
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(x + size * 0.18, y - size);
-        this.ctx.lineTo(x - size * 0.58, y + size * 0.08);
-        this.ctx.lineTo(x - size * 0.08, y + size * 0.08);
-        this.ctx.lineTo(x - size * 0.32, y + size);
-        this.ctx.lineTo(x + size * 0.64, y - size * 0.22);
-        this.ctx.lineTo(x + size * 0.1, y - size * 0.22);
-        this.ctx.closePath();
-        this.ctx.fillStyle = claimed ? this.themeTokens.energyClaimed : this.themeTokens.energyOpen;
-        this.ctx.fill();
-        this.ctx.strokeStyle = this.themeTokens.energyStroke;
-        this.ctx.lineJoin = 'round';
-        this.ctx.lineWidth = 2.4;
-        this.ctx.stroke();
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(x + size * 0.08, y - size * 0.68);
-        this.ctx.lineTo(x - size * 0.24, y - size * 0.08);
-        this.ctx.lineTo(x + size * 0.08, y - size * 0.08);
-        this.ctx.strokeStyle = this.themeTokens.energyHighlight;
-        this.ctx.lineWidth = 1.8;
-        this.ctx.stroke();
-    }
-
-    drawAtomIcon(x, y, tier, claimed) {
-        const radius = 5 + tier * 1.6;
-
-        this.ctx.strokeStyle = claimed ? this.themeTokens.researchClaimed : this.themeTokens.researchOpen;
-        this.ctx.lineWidth = 1.4 + tier * 0.18;
-        this.drawAtomOrbit(x, y, radius, 0);
-        this.drawAtomOrbit(x, y, radius, Math.PI / 3);
-        this.drawAtomOrbit(x, y, radius, -Math.PI / 3);
-
-        this.ctx.beginPath();
-        this.ctx.arc(x, y, 3, 0, Math.PI * 2);
-        this.ctx.fillStyle = claimed ? this.themeTokens.researchCoreClaimed : this.themeTokens.researchCoreOpen;
-        this.ctx.fill();
-        this.ctx.strokeStyle = this.themeTokens.researchStroke;
-        this.ctx.lineWidth = 1.5;
-        this.ctx.stroke();
-    }
-
-    drawTierPips(x, y, tier, resourceType, claimed) {
-        const pipRadius = claimed ? 2 : 1.7;
-        const gap = 5;
-        const startX = x - ((tier - 1) * gap) / 2;
-
-        this.ctx.save();
-        for (let index = 0; index < tier; index++) {
-            this.ctx.beginPath();
-            this.ctx.arc(startX + index * gap, y, pipRadius, 0, Math.PI * 2);
-            this.ctx.fillStyle = resourceType === 'energy'
-                ? (claimed ? this.themeTokens.energyPipClaimed : this.themeTokens.energyPipOpen)
-                : (claimed ? this.themeTokens.researchPipClaimed : this.themeTokens.researchPipOpen);
-            this.ctx.fill();
-            this.ctx.strokeStyle = this.themeTokens.pipStroke;
-            this.ctx.lineWidth = 1;
-            this.ctx.stroke();
-        }
-        this.ctx.restore();
-    }
-
-    drawAtomOrbit(x, y, radius, rotation) {
-        this.ctx.save();
-        this.ctx.translate(x, y);
-        this.ctx.rotate(rotation);
-        this.ctx.beginPath();
-        this.ctx.ellipse(0, 0, radius * 1.35, radius * 0.48, 0, 0, Math.PI * 2);
-        this.ctx.stroke();
-        this.ctx.restore();
+        this.glyphRenderer.drawResourceMarker(this.ctx, resource, screenPos.x, screenPos.y, claimed);
     }
 
     updateHud() {

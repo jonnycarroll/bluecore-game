@@ -50,6 +50,7 @@ object-layout.js Object sorting and viewport culling helpers
 scene.js      Scene object container and default scene data
 tile-renderer.js Canvas renderer for isometric tile surfaces
 object-renderer.js Canvas renderer for cuboids and stacked cuboids
+map-glyphs.js Canvas glyph assets for resource markers
 grid.js       App coordinator for viewport, input, animation, HUD, and render passes
 main.js       App-level entry placeholder
 tests/        Small Node-based regression tests
