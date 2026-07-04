@@ -2,13 +2,13 @@
     --color-page: #050607;
     --color-text: #f4f7fb;
     --color-muted: #aebbc5;
-    --color-panel: rgba(244, 247, 251, 0.08);
-    --color-panel-hover: rgba(244, 247, 251, 0.14);
-    --color-panel-border: rgba(190, 218, 228, 0.28);
+    --color-panel: rgba(7, 11, 14, 0.45);
+    --color-panel-hover: rgba(19, 32, 39, 0.58);
+    --color-panel-border: rgba(190, 218, 228, 0.24);
     --color-panel-divider: rgba(190, 218, 228, 0.18);
     --color-panel-shadow: rgba(0, 0, 0, 0.28);
-    --color-control: rgba(244, 247, 251, 0.08);
-    --color-control-hover: rgba(244, 247, 251, 0.14);
+    --color-control: rgba(19, 32, 39, 0.58);
+    --color-control-hover: rgba(24, 45, 62, 0.66);
     --color-control-border: rgba(176, 209, 224, 0.34);
     --color-control-strong-border: rgba(180, 224, 255, 0.52);
     --color-control-disabled: rgba(18, 22, 25, 0.8);
@@ -25,13 +25,13 @@
     --color-page: #e7edf0;
     --color-text: #102027;
     --color-muted: #50626b;
-    --color-panel: rgba(255, 255, 255, 0.28);
-    --color-panel-hover: rgba(255, 255, 255, 0.42);
-    --color-panel-border: rgba(76, 104, 116, 0.26);
+    --color-panel: rgba(248, 252, 253, 0.62);
+    --color-panel-hover: rgba(229, 241, 246, 0.72);
+    --color-panel-border: rgba(76, 104, 116, 0.24);
     --color-panel-divider: rgba(76, 104, 116, 0.18);
     --color-panel-shadow: rgba(46, 66, 75, 0.18);
-    --color-control: rgba(255, 255, 255, 0.28);
-    --color-control-hover: rgba(255, 255, 255, 0.42);
+    --color-control: rgba(255, 255, 255, 0.62);
+    --color-control-hover: rgba(229, 241, 246, 0.72);
     --color-control-border: rgba(55, 88, 104, 0.28);
     --color-control-strong-border: rgba(36, 116, 154, 0.4);
     --color-control-disabled: rgba(220, 228, 232, 0.86);
@@ -49,13 +49,13 @@
         --color-page: #e7edf0;
         --color-text: #102027;
         --color-muted: #50626b;
-        --color-panel: rgba(255, 255, 255, 0.28);
-        --color-panel-hover: rgba(255, 255, 255, 0.42);
-        --color-panel-border: rgba(76, 104, 116, 0.26);
+        --color-panel: rgba(248, 252, 253, 0.62);
+        --color-panel-hover: rgba(229, 241, 246, 0.72);
+        --color-panel-border: rgba(76, 104, 116, 0.24);
         --color-panel-divider: rgba(76, 104, 116, 0.18);
         --color-panel-shadow: rgba(46, 66, 75, 0.18);
-        --color-control: rgba(255, 255, 255, 0.28);
-        --color-control-hover: rgba(255, 255, 255, 0.42);
+        --color-control: rgba(255, 255, 255, 0.62);
+        --color-control-hover: rgba(229, 241, 246, 0.72);
         --color-control-border: rgba(55, 88, 104, 0.28);
         --color-control-strong-border: rgba(36, 116, 154, 0.4);
         --color-control-disabled: rgba(220, 228, 232, 0.86);
@@ -155,7 +155,7 @@ body, html {
     color: var(--color-text);
     border: 1px solid var(--color-control-strong-border);
     border-radius: 4px;
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(1px);
     cursor: pointer;
 }
 
@@ -194,7 +194,7 @@ body, html {
     background: var(--color-panel);
     border: 1px solid var(--color-panel-border);
     box-shadow: 0 12px 28px var(--color-panel-shadow);
-    backdrop-filter: blur(2px);
+    backdrop-filter: blur(1px);
 }
 
 #hud,
