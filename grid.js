@@ -110,7 +110,7 @@ class IsoGrid {
             tileHome: { r: 38, g: 170, b: 218, a: 0.92 },
             tileClaimed: { r: 45, g: 121, b: 98, a: 0.66 },
             tileFrontier: { r: 182, g: 142, b: 62, a: 0.52 },
-            tileRevealed: { r: 78, g: 86, b: 90, a: 0.18 },
+            tileRevealed: { r: 105, g: 116, b: 122, a: 0.36 },
             hoverFallback: 'rgba(255, 255, 255, ',
             homeMarkerFill: 'rgba(0, 160, 255, 0.95)',
             homeMarkerStroke: 'rgba(220, 245, 255, 0.9)',
