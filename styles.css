@@ -4,8 +4,10 @@ body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #000;
+    background-color: #050607;
     position: relative;
+    color: #f4f7fb;
+    font-family: Arial, sans-serif;
 }
 
 #game-canvas {
@@ -18,16 +20,164 @@ body, html {
     position: absolute;
     bottom: 20px;
     right: 20px;
-    padding: 10px 15px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 1px solid #fff;
+    width: 52px;
+    height: 36px;
+    background-color: rgba(8, 14, 20, 0.84);
+    color: #f4f7fb;
+    border: 1px solid rgba(180, 224, 255, 0.52);
     border-radius: 4px;
     cursor: pointer;
-    font-family: Arial, sans-serif;
     z-index: 10;
 }
 
 #center-button:hover {
-    background-color: rgba(50, 50, 50, 0.9);
+    background-color: rgba(24, 45, 62, 0.92);
+}
+
+#hud,
+#side-panel {
+    position: absolute;
+    z-index: 10;
+    background: rgba(7, 11, 14, 0.82);
+    border: 1px solid rgba(190, 218, 228, 0.22);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+    backdrop-filter: blur(8px);
+}
+
+#hud {
+    top: 16px;
+    left: 16px;
+    width: min(520px, calc(100vw - 32px));
+    border-radius: 6px;
+    padding: 12px;
+}
+
+.hud-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.hud-grid div {
+    min-width: 0;
+}
+
+.label,
+.hud-grid small,
+#side-panel small,
+#tile-details {
+    color: #aebbc5;
+}
+
+.label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.hud-grid strong {
+    display: block;
+    margin-top: 4px;
+    font-size: 20px;
+    line-height: 1.1;
+}
+
+.hud-grid small {
+    display: block;
+    margin-top: 2px;
+    font-size: 12px;
+}
+
+.xp-track {
+    height: 5px;
+    margin-top: 10px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 999px;
+}
+
+#xp-fill {
+    width: 0%;
+    height: 100%;
+    background: #65d6a5;
+}
+
+#side-panel {
+    top: 16px;
+    right: 16px;
+    width: 280px;
+    border-radius: 6px;
+    padding: 12px;
+}
+
+#selected-panel {
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(190, 218, 228, 0.18);
+}
+
+#tile-title,
+#skills-panel h2 {
+    margin: 0;
+    font-size: 16px;
+    letter-spacing: 0;
+}
+
+#tile-details {
+    min-height: 58px;
+    margin: 8px 0 10px;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+#tile-action,
+.skill-button {
+    width: 100%;
+    min-height: 36px;
+    border: 1px solid rgba(176, 209, 224, 0.34);
+    border-radius: 4px;
+    background: rgba(19, 32, 39, 0.9);
+    color: #f4f7fb;
+    cursor: pointer;
+}
+
+#tile-action:disabled,
+.skill-button:disabled {
+    color: #77838c;
+    cursor: default;
+    background: rgba(18, 22, 25, 0.8);
+}
+
+#skills-panel {
+    padding-top: 12px;
+}
+
+.skill-button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 7px 9px;
+    text-align: left;
+}
+
+@media (max-width: 760px) {
+    #hud {
+        top: 10px;
+        left: 10px;
+        width: calc(100vw - 20px);
+        box-sizing: border-box;
+    }
+
+    #side-panel {
+        top: auto;
+        right: 10px;
+        bottom: 66px;
+        left: 10px;
+        width: auto;
+    }
+
+    #center-button {
+        right: 10px;
+        bottom: 16px;
+    }
 }

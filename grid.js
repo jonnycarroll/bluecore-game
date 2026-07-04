@@ -1,4 +1,4 @@
-// Isometric Grid System for Isometric Grid Explorer
+// Isometric grid system for EMD Sim Gym
 
 class IsoGrid {
     constructor(canvas) {
@@ -19,10 +19,13 @@ class IsoGrid {
             this.tileWidth,
             this.tileHeight
         );
+        this.gameState = new IdleGameState();
         this.scene = IsoScene.createDefault();
         this.offsetX = 0;
         this.offsetY = 0;
         this.isDragging = false;
+        this.pointerStart = null;
+        this.dragDistance = 0;
         this.lastX = 0;
         this.lastY = 0;
         this.hoveredTile = null;
@@ -36,14 +39,36 @@ class IsoGrid {
         this.resizeCanvas();
         window.addEventListener('resize', () => this.resizeCanvas());
         
+        this.cacheDomElements();
+
         // Setup event listeners
         this.setupEventListeners();
         
         // Center the view on the grid's center point
         this.centerView(false);
         
-        // Start rendering
-        this.render();
+        // Start rendering and production
+        this.updateHud();
+        this.startAnimationLoop();
+    }
+
+    cacheDomElements() {
+        this.dom = {
+            energyValue: document.getElementById('energy-value'),
+            energyRate: document.getElementById('energy-rate'),
+            researchValue: document.getElementById('research-value'),
+            researchRate: document.getElementById('research-rate'),
+            baseLevel: document.getElementById('base-level'),
+            baseXp: document.getElementById('base-xp'),
+            xpFill: document.getElementById('xp-fill'),
+            tileTitle: document.getElementById('tile-title'),
+            tileDetails: document.getElementById('tile-details'),
+            tileAction: document.getElementById('tile-action'),
+            skillButtons: Array.from(document.querySelectorAll('.skill-button')),
+            skillExpansion: document.getElementById('skill-expansion'),
+            skillProduction: document.getElementById('skill-production'),
+            skillSurveying: document.getElementById('skill-surveying')
+        };
     }
     
     resizeCanvas() {
@@ -61,16 +86,27 @@ class IsoGrid {
     setupEventListeners() {
         this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
         this.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
-        this.canvas.addEventListener('mouseup', () => this.handleMouseUp());
-        this.canvas.addEventListener('mouseleave', () => this.handleMouseUp());
+        this.canvas.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+        this.canvas.addEventListener('mouseleave', () => {
+            this.updateHoveredTile(null);
+            this.handleMouseUp();
+        });
         
         // Touch events for mobile
         this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
         this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e));
-        this.canvas.addEventListener('touchend', () => this.handleTouchEnd());
+        this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e));
         
         // Center button event listener
         document.getElementById('center-button').addEventListener('click', () => this.centerView());
+        this.dom.tileAction.addEventListener('click', () => this.handleSelectedTileAction());
+        for (const button of this.dom.skillButtons) {
+            button.addEventListener('click', () => {
+                this.gameState.purchaseSkill(button.dataset.skill);
+                this.updateHud();
+                this.render();
+            });
+        }
     }
     
     handleMouseDown(e) {
@@ -79,6 +115,8 @@ class IsoGrid {
         const rect = this.canvas.getBoundingClientRect();
         this.lastX = e.clientX - rect.left;
         this.lastY = e.clientY - rect.top;
+        this.pointerStart = { x: this.lastX, y: this.lastY };
+        this.dragDistance = 0;
     }
     
     handleMouseMove(e) {
@@ -89,6 +127,7 @@ class IsoGrid {
             
             const deltaX = currentX - this.lastX;
             const deltaY = currentY - this.lastY;
+            this.dragDistance += Math.hypot(deltaX, deltaY);
             
             this.offsetX += deltaX;
             this.offsetY += deltaY;
@@ -107,8 +146,14 @@ class IsoGrid {
         }
     }
     
-    handleMouseUp() {
+    handleMouseUp(e) {
+        if (this.isDragging && e && this.pointerStart && this.dragDistance < 5) {
+            const rect = this.canvas.getBoundingClientRect();
+            this.handleTileClick(e.clientX - rect.left, e.clientY - rect.top);
+        }
+
         this.isDragging = false;
+        this.pointerStart = null;
     }
     
     handleTouchStart(e) {
@@ -118,6 +163,8 @@ class IsoGrid {
         const rect = this.canvas.getBoundingClientRect();
         this.lastX = e.touches[0].clientX - rect.left;
         this.lastY = e.touches[0].clientY - rect.top;
+        this.pointerStart = { x: this.lastX, y: this.lastY };
+        this.dragDistance = 0;
     }
     
     handleTouchMove(e) {
@@ -129,6 +176,7 @@ class IsoGrid {
             
             const deltaX = currentX - this.lastX;
             const deltaY = currentY - this.lastY;
+            this.dragDistance += Math.hypot(deltaX, deltaY);
             
             this.offsetX += deltaX;
             this.offsetY += deltaY;
@@ -140,8 +188,42 @@ class IsoGrid {
         }
     }
     
-    handleTouchEnd() {
+    handleTouchEnd(e) {
+        if (this.isDragging && this.pointerStart && this.dragDistance < 5) {
+            this.handleTileClick(this.pointerStart.x, this.pointerStart.y);
+        }
+
         this.isDragging = false;
+        this.pointerStart = null;
+        if (e) {
+            e.preventDefault();
+        }
+    }
+
+    handleTileClick(screenX, screenY) {
+        const tile = this.getTileAtPosition(screenX, screenY);
+        this.gameState.selectTile(tile.x, tile.y);
+        this.handleInspectedTileAction(false);
+    }
+
+    handleSelectedTileAction() {
+        this.handleInspectedTileAction(true);
+    }
+
+    handleInspectedTileAction(force = true) {
+        const selected = this.getInspectedTile();
+        this.gameState.selectTile(selected.x, selected.y);
+
+        if (this.gameState.isHomeCore(selected.x, selected.y) && this.gameState.canLevelUpBase()) {
+            this.gameState.levelUpBase();
+        } else if (this.gameState.canClaim(selected.x, selected.y)) {
+            this.gameState.claimTile(selected.x, selected.y);
+        } else if (force) {
+            this.gameState.selectTile(selected.x, selected.y);
+        }
+
+        this.updateHud();
+        this.render();
     }
     
     centerView(animate = true) {
@@ -240,6 +322,7 @@ class IsoGrid {
         }
 
         this.startAnimationLoop();
+        this.updateHud();
     }
 
     setHoverAnimationTarget(tile, targetAlpha) {
@@ -285,16 +368,12 @@ class IsoGrid {
         this.animationFrame = null;
         const deltaMs = this.lastAnimationTime === 0 ? 16 : Math.min(timestamp - this.lastAnimationTime, 64);
         this.lastAnimationTime = timestamp;
-        const stillAnimating = this.stepAnimations(timestamp, deltaMs);
+        this.stepAnimations(timestamp, deltaMs);
+        this.gameState.tickFromTimestamp(timestamp);
 
         this.render();
-
-        if (stillAnimating) {
-            this.startAnimationLoop();
-            return;
-        }
-
-        this.lastAnimationTime = 0;
+        this.updateHud();
+        this.startAnimationLoop();
     }
 
     stepAnimations(timestamp, deltaMs) {
@@ -352,7 +431,7 @@ class IsoGrid {
     
     render() {
         // Clear canvas behind the tiled surface.
-        this.ctx.fillStyle = '#000';
+        this.ctx.fillStyle = '#050607';
         this.ctx.fillRect(0, 0, this.viewportWidth, this.viewportHeight);
         
         const { startX, endX, startY, endY } = this.getVisibleTiles();
@@ -365,6 +444,7 @@ class IsoGrid {
         }
 
         this.drawObjects();
+        this.drawTileOverlays(startX, endX, startY, endY);
         this.drawCenterDirectionMarker();
     }
 
@@ -440,11 +520,23 @@ class IsoGrid {
     }
 
     getTileBaseColor(x, y) {
-        if (x === 0 && y === 0) {
-            return { r: 0, g: 160, b: 255, a: 0.95 };
+        if (!this.gameState.isRevealed(x, y)) {
+            return { r: 10, g: 12, b: 13, a: 0.88 };
         }
 
-        return null;
+        if (this.gameState.isHomeCore(x, y)) {
+            return { r: 38, g: 170, b: 218, a: 0.92 };
+        }
+
+        if (this.gameState.isClaimed(x, y)) {
+            return { r: 45, g: 121, b: 98, a: 0.66 };
+        }
+
+        if (this.gameState.canClaim(x, y)) {
+            return { r: 182, g: 142, b: 62, a: 0.52 };
+        }
+
+        return { r: 78, g: 86, b: 90, a: 0.18 };
     }
 
     getBaseFillStyle(baseColor) {
@@ -485,12 +577,243 @@ class IsoGrid {
     }
 
     drawObjects() {
-        this.objectRenderer.drawObjects(this.scene.objects, {
+        const objects = [{
+            type: 'cuboid',
+            x: 0,
+            y: 0,
+            height: 12,
+            levels: this.gameState.baseLevel,
+            material: 'blueBlock'
+        }];
+
+        this.objectRenderer.drawObjects(objects, {
             offsetX: this.offsetX,
             offsetY: this.offsetY,
             width: this.viewportWidth,
             height: this.viewportHeight
         });
+    }
+
+    drawTileOverlays(startX, endX, startY, endY) {
+        for (let y = startY; y < endY; y++) {
+            for (let x = startX; x < endX; x++) {
+                this.drawResourceMarker(x, y);
+            }
+        }
+    }
+
+    drawResourceMarker(x, y) {
+        if (!this.gameState.isRevealed(x, y)) {
+            return;
+        }
+
+        const resource = IdleGameState.getResourceAt(x, y);
+        if (!resource) {
+            return;
+        }
+
+        const screenPos = this.getTileScreenPosition(x, y);
+        const claimed = this.gameState.isClaimed(x, y);
+        const alpha = claimed ? 1 : 0.68;
+        const lift = 13 + resource.tier * 3;
+        const iconY = screenPos.y - lift;
+
+        this.ctx.save();
+        this.ctx.globalAlpha = alpha;
+        this.drawResourceShadow(screenPos.x, screenPos.y - 2, claimed);
+
+        if (resource.type === 'energy') {
+            this.drawSparkIcon(screenPos.x, iconY, resource.tier, claimed);
+        } else {
+            this.drawAtomIcon(screenPos.x, iconY, resource.tier, claimed);
+        }
+
+        this.drawTierPips(screenPos.x, iconY + 13 + resource.tier, resource.tier, resource.type, claimed);
+        this.ctx.restore();
+    }
+
+    drawResourceShadow(x, y, claimed) {
+        this.ctx.beginPath();
+        this.ctx.ellipse(x, y, claimed ? 9 : 7, claimed ? 4 : 3, 0, 0, Math.PI * 2);
+        this.ctx.fillStyle = claimed ? 'rgba(0, 0, 0, 0.34)' : 'rgba(0, 0, 0, 0.2)';
+        this.ctx.fill();
+    }
+
+    drawSparkIcon(x, y, tier, claimed) {
+        const size = 8 + tier * 1.8;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + size * 0.18, y - size);
+        this.ctx.lineTo(x - size * 0.58, y + size * 0.08);
+        this.ctx.lineTo(x - size * 0.08, y + size * 0.08);
+        this.ctx.lineTo(x - size * 0.32, y + size);
+        this.ctx.lineTo(x + size * 0.64, y - size * 0.22);
+        this.ctx.lineTo(x + size * 0.1, y - size * 0.22);
+        this.ctx.closePath();
+        this.ctx.fillStyle = claimed ? '#9df7bd' : '#5ede91';
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#041f13';
+        this.ctx.lineJoin = 'round';
+        this.ctx.lineWidth = 2.4;
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + size * 0.08, y - size * 0.68);
+        this.ctx.lineTo(x - size * 0.24, y - size * 0.08);
+        this.ctx.lineTo(x + size * 0.08, y - size * 0.08);
+        this.ctx.strokeStyle = 'rgba(245, 255, 247, 0.68)';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.stroke();
+    }
+
+    drawAtomIcon(x, y, tier, claimed) {
+        const radius = 5 + tier * 1.6;
+
+        this.ctx.strokeStyle = claimed ? '#f2cf67' : '#d8a944';
+        this.ctx.lineWidth = 1.4 + tier * 0.18;
+        this.drawAtomOrbit(x, y, radius, 0);
+        this.drawAtomOrbit(x, y, radius, Math.PI / 3);
+        this.drawAtomOrbit(x, y, radius, -Math.PI / 3);
+
+        this.ctx.beginPath();
+        this.ctx.arc(x, y, 3, 0, Math.PI * 2);
+        this.ctx.fillStyle = claimed ? '#fff0a6' : '#e2c15d';
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#32250a';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.stroke();
+    }
+
+    drawTierPips(x, y, tier, resourceType, claimed) {
+        const pipRadius = claimed ? 2 : 1.7;
+        const gap = 5;
+        const startX = x - ((tier - 1) * gap) / 2;
+
+        this.ctx.save();
+        for (let index = 0; index < tier; index++) {
+            this.ctx.beginPath();
+            this.ctx.arc(startX + index * gap, y, pipRadius, 0, Math.PI * 2);
+            this.ctx.fillStyle = resourceType === 'energy'
+                ? (claimed ? '#c8ffd8' : '#86eeb0')
+                : (claimed ? '#fff0a6' : '#e0c16a');
+            this.ctx.fill();
+            this.ctx.strokeStyle = 'rgba(4, 8, 9, 0.84)';
+            this.ctx.lineWidth = 1;
+            this.ctx.stroke();
+        }
+        this.ctx.restore();
+    }
+
+    drawAtomOrbit(x, y, radius, rotation) {
+        this.ctx.save();
+        this.ctx.translate(x, y);
+        this.ctx.rotate(rotation);
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, 0, radius * 1.35, radius * 0.48, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.restore();
+    }
+
+    updateHud() {
+        if (!this.dom) {
+            return;
+        }
+
+        const rates = this.gameState.getProductionRates();
+        const xpRequired = this.gameState.getBaseXpRequired();
+        const selected = this.gameState.getTileDetails(this.getInspectedTile().x, this.getInspectedTile().y);
+
+        this.dom.energyValue.textContent = this.formatNumber(this.gameState.energy);
+        this.dom.energyRate.textContent = `+${this.formatRate(rates.energy)}/s`;
+        this.dom.researchValue.textContent = this.formatNumber(this.gameState.research);
+        this.dom.researchRate.textContent = `+${this.formatRate(rates.research)}/s`;
+        this.dom.baseLevel.textContent = `Level ${this.gameState.baseLevel}`;
+        this.dom.baseXp.textContent = `${this.formatNumber(this.gameState.baseXp)} / ${xpRequired} XP`;
+        this.dom.xpFill.style.width = `${Math.min(this.gameState.baseXp / xpRequired, 1) * 100}%`;
+        this.updateSelectedPanel(selected);
+        this.updateSkillButtons();
+    }
+
+    getInspectedTile() {
+        return this.hoveredTile || this.gameState.selectedTile;
+    }
+
+    updateSelectedPanel(selected) {
+        const resourceText = selected.resource
+            ? this.getResourceBenefitText(selected.resource, selected.isClaimed)
+            : 'No resource node';
+
+        this.dom.tileTitle.textContent = selected.isHomeCore
+            ? 'Home Core'
+            : `Tile ${selected.x}, ${selected.y}`;
+
+        if (!selected.isRevealed) {
+            this.dom.tileDetails.textContent = 'Unrevealed territory.';
+        } else if (selected.isHomeCore) {
+            this.dom.tileDetails.textContent = `Reveal radius ${this.gameState.getGlobalRevealRadius()}. Output +${this.formatRate(this.gameState.getHomeEnergyRate())} Energy/s.`;
+        } else {
+            const costText = selected.isClaimed ? 'No claim cost' : `Cost ${selected.claimCost} Energy`;
+            const statusText = selected.isClaimed ? 'Claimed' : selected.isAdjacent ? 'Adjacent frontier' : 'Needs connection';
+            this.dom.tileDetails.textContent = `${statusText}. ${costText}. Distance ${selected.distance}. ${resourceText}.`;
+        }
+
+        if (selected.isHomeCore && this.gameState.canLevelUpBase()) {
+            this.dom.tileAction.textContent = `Level Up Base`;
+            this.dom.tileAction.disabled = false;
+        } else if (selected.canClaim) {
+            this.dom.tileAction.textContent = `Claim (${selected.claimCost} Energy)`;
+            this.dom.tileAction.disabled = false;
+        } else if (!selected.isClaimed && selected.isRevealed && selected.isAdjacent) {
+            this.dom.tileAction.textContent = `Need ${selected.claimCost} Energy`;
+            this.dom.tileAction.disabled = true;
+        } else {
+            this.dom.tileAction.textContent = selected.isClaimed ? 'Claimed' : 'Select adjacent frontier';
+            this.dom.tileAction.disabled = true;
+        }
+    }
+
+    getResourceBenefitText(resource, isClaimed) {
+        const productionMultiplier = 1 + this.gameState.skills.production * GameStateConstants.productionSkillBonus;
+        const rate = resource.rate * productionMultiplier;
+        const resourceName = this.capitalize(resource.type);
+        const verb = isClaimed ? 'Producing' : 'Claim benefit';
+
+        return `${resourceName} node T${resource.tier}. ${verb}: +${this.formatRate(rate)}/${resource.type === 'energy' ? 's Energy' : 's Research'}`;
+    }
+
+    updateSkillButtons() {
+        const labels = {
+            expansion: this.dom.skillExpansion,
+            production: this.dom.skillProduction,
+            surveying: this.dom.skillSurveying
+        };
+
+        for (const button of this.dom.skillButtons) {
+            const skill = button.dataset.skill;
+            const level = this.gameState.skills[skill];
+            const cost = this.gameState.getSkillCost(skill);
+
+            labels[skill].textContent = level >= GameStateConstants.maxSkillLevel
+                ? `Level ${level} max`
+                : `Level ${level} - ${cost} Research`;
+            button.disabled = !this.gameState.canPurchaseSkill(skill);
+        }
+    }
+
+    formatNumber(value) {
+        if (value >= 100) {
+            return Math.floor(value).toString();
+        }
+
+        return value.toFixed(1);
+    }
+
+    formatRate(value) {
+        return value >= 10 ? value.toFixed(1) : value.toFixed(2);
+    }
+
+    capitalize(value) {
+        return value.charAt(0).toUpperCase() + value.slice(1);
     }
 }
 

@@ -3,14 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Isometric Grid Explorer</title>
+    <title>EMD Sim Gym</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <canvas id="game-canvas"></canvas>
-    <button id="center-button">Return to Center</button>
+    <section id="hud" aria-label="Base status">
+        <div class="hud-grid">
+            <div>
+                <span class="label">Energy</span>
+                <strong id="energy-value">0</strong>
+                <small id="energy-rate">+0/s</small>
+            </div>
+            <div>
+                <span class="label">Research</span>
+                <strong id="research-value">0</strong>
+                <small id="research-rate">+0/s</small>
+            </div>
+            <div>
+                <span class="label">Base</span>
+                <strong id="base-level">1</strong>
+                <small id="base-xp">0 / 0 XP</small>
+            </div>
+        </div>
+        <div class="xp-track"><div id="xp-fill"></div></div>
+    </section>
+
+    <aside id="side-panel" aria-label="Tile and research controls">
+        <div id="selected-panel">
+            <h1 id="tile-title">Home Core</h1>
+            <p id="tile-details"></p>
+            <button id="tile-action" type="button">Select</button>
+        </div>
+
+        <div id="skills-panel">
+            <h2>Research</h2>
+            <button class="skill-button" type="button" data-skill="expansion">
+                <span>Expansion</span>
+                <small id="skill-expansion">Level 0</small>
+            </button>
+            <button class="skill-button" type="button" data-skill="production">
+                <span>Production</span>
+                <small id="skill-production">Level 0</small>
+            </button>
+            <button class="skill-button" type="button" data-skill="surveying">
+                <span>Surveying</span>
+                <small id="skill-surveying">Level 0</small>
+            </button>
+        </div>
+    </aside>
+
+    <button id="center-button" type="button" title="Return to Home Core">Home</button>
     
     <script src="iso-math.js"></script>
+    <script src="game-state.js"></script>
     <script src="materials.js"></script>
     <script src="object-layout.js"></script>
     <script src="scene.js"></script>

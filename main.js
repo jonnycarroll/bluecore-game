@@ -1,4 +1,3 @@
-// Main game logic for Isometric Grid Explorer
+// Main game logic for EMD Sim Gym
 
-// No additional logic needed for the minimal version
-// All functionality is handled in grid.js
+// App coordination is handled in grid.js.

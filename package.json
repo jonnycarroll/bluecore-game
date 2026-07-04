@@ -1,11 +1,11 @@
 {
-  "name": "isometric-grid-explorer",
+  "name": "emd-sim-gym",
   "version": "1.0.0",
-  "description": "A simple browser-based isometric grid explorer with draggable navigation",
+  "description": "A browser-based idle exploration builder on an isometric grid",
   "main": "index.html",
   "scripts": {
     "start": "echo 'Game runs in browser - open index.html'",
-    "test": "node tests/iso-math.test.js && node tests/object-renderer.test.js"
+    "test": "node tests/iso-math.test.js && node tests/object-renderer.test.js && node tests/game-state.test.js"
   },
   "keywords": [
     "game",
