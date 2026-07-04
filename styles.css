@@ -2,36 +2,46 @@
     --color-page: #050607;
     --color-text: #f4f7fb;
     --color-muted: #aebbc5;
-    --color-panel: rgba(7, 11, 14, 0.82);
-    --color-panel-border: rgba(190, 218, 228, 0.22);
+    --color-panel: rgba(244, 247, 251, 0.08);
+    --color-panel-hover: rgba(244, 247, 251, 0.14);
+    --color-panel-border: rgba(190, 218, 228, 0.28);
     --color-panel-divider: rgba(190, 218, 228, 0.18);
     --color-panel-shadow: rgba(0, 0, 0, 0.28);
-    --color-control: rgba(19, 32, 39, 0.9);
-    --color-control-hover: rgba(24, 45, 62, 0.92);
+    --color-control: rgba(244, 247, 251, 0.08);
+    --color-control-hover: rgba(244, 247, 251, 0.14);
     --color-control-border: rgba(176, 209, 224, 0.34);
     --color-control-strong-border: rgba(180, 224, 255, 0.52);
     --color-control-disabled: rgba(18, 22, 25, 0.8);
     --color-text-disabled: #77838c;
     --color-progress-track: rgba(255, 255, 255, 0.1);
     --color-progress-fill: #65d6a5;
+    --color-start-button: rgba(91, 255, 149, 0.16);
+    --color-start-button-hover: rgba(91, 255, 149, 0.26);
+    --color-start-button-border: rgba(129, 255, 174, 0.74);
+    --color-start-button-shadow: rgba(91, 255, 149, 0.24);
 }
 
 :root[data-theme="light"] {
     --color-page: #e7edf0;
     --color-text: #102027;
     --color-muted: #50626b;
-    --color-panel: rgba(248, 252, 253, 0.86);
-    --color-panel-border: rgba(76, 104, 116, 0.22);
+    --color-panel: rgba(255, 255, 255, 0.28);
+    --color-panel-hover: rgba(255, 255, 255, 0.42);
+    --color-panel-border: rgba(76, 104, 116, 0.26);
     --color-panel-divider: rgba(76, 104, 116, 0.18);
     --color-panel-shadow: rgba(46, 66, 75, 0.18);
-    --color-control: rgba(255, 255, 255, 0.86);
-    --color-control-hover: rgba(229, 241, 246, 0.96);
+    --color-control: rgba(255, 255, 255, 0.28);
+    --color-control-hover: rgba(255, 255, 255, 0.42);
     --color-control-border: rgba(55, 88, 104, 0.28);
     --color-control-strong-border: rgba(36, 116, 154, 0.4);
     --color-control-disabled: rgba(220, 228, 232, 0.86);
     --color-text-disabled: #78878e;
     --color-progress-track: rgba(16, 32, 39, 0.12);
     --color-progress-fill: #209866;
+    --color-start-button: rgba(38, 222, 105, 0.2);
+    --color-start-button-hover: rgba(38, 222, 105, 0.32);
+    --color-start-button-border: rgba(20, 171, 75, 0.56);
+    --color-start-button-shadow: rgba(38, 222, 105, 0.18);
 }
 
 @media (prefers-color-scheme: light) {
@@ -39,18 +49,23 @@
         --color-page: #e7edf0;
         --color-text: #102027;
         --color-muted: #50626b;
-        --color-panel: rgba(248, 252, 253, 0.86);
-        --color-panel-border: rgba(76, 104, 116, 0.22);
+        --color-panel: rgba(255, 255, 255, 0.28);
+        --color-panel-hover: rgba(255, 255, 255, 0.42);
+        --color-panel-border: rgba(76, 104, 116, 0.26);
         --color-panel-divider: rgba(76, 104, 116, 0.18);
         --color-panel-shadow: rgba(46, 66, 75, 0.18);
-        --color-control: rgba(255, 255, 255, 0.86);
-        --color-control-hover: rgba(229, 241, 246, 0.96);
+        --color-control: rgba(255, 255, 255, 0.28);
+        --color-control-hover: rgba(255, 255, 255, 0.42);
         --color-control-border: rgba(55, 88, 104, 0.28);
         --color-control-strong-border: rgba(36, 116, 154, 0.4);
         --color-control-disabled: rgba(220, 228, 232, 0.86);
         --color-text-disabled: #78878e;
         --color-progress-track: rgba(16, 32, 39, 0.12);
         --color-progress-fill: #209866;
+        --color-start-button: rgba(38, 222, 105, 0.2);
+        --color-start-button-hover: rgba(38, 222, 105, 0.32);
+        --color-start-button-border: rgba(20, 171, 75, 0.56);
+        --color-start-button-shadow: rgba(38, 222, 105, 0.18);
     }
 }
 
@@ -70,6 +85,54 @@ body, html {
     display: block;
     width: 100%;
     height: 100%;
+}
+
+#welcome-screen {
+    position: absolute;
+    inset: 0;
+    z-index: 12;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 66vh;
+    box-sizing: border-box;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 180ms ease, visibility 180ms ease;
+}
+
+#start-button {
+    min-width: min(340px, calc(100vw - 48px));
+    min-height: 72px;
+    padding: 0 26px;
+    border: 1px solid var(--color-start-button-border);
+    border-radius: 6px;
+    background: var(--color-start-button);
+    color: var(--color-text);
+    box-shadow: 0 18px 38px var(--color-panel-shadow), 0 0 24px var(--color-start-button-shadow);
+    backdrop-filter: blur(2px);
+    cursor: pointer;
+    font: inherit;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: 0;
+    pointer-events: auto;
+    animation: start-button-float 2800ms ease-in-out infinite;
+}
+
+#start-button:hover {
+    background: var(--color-start-button-hover);
+}
+
+@keyframes start-button-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-8px);
+    }
 }
 
 #viewport-controls {
@@ -92,11 +155,12 @@ body, html {
     color: var(--color-text);
     border: 1px solid var(--color-control-strong-border);
     border-radius: 4px;
+    backdrop-filter: blur(2px);
     cursor: pointer;
 }
 
 .icon-button:hover {
-    background-color: var(--color-control-hover);
+    background-color: var(--color-panel-hover);
 }
 
 .icon-button svg {
@@ -130,7 +194,27 @@ body, html {
     background: var(--color-panel);
     border: 1px solid var(--color-panel-border);
     box-shadow: 0 12px 28px var(--color-panel-shadow);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(2px);
+}
+
+#hud,
+#side-panel,
+#center-button {
+    opacity: 1;
+    transition: opacity 220ms ease, visibility 220ms ease;
+}
+
+.pre-start #hud,
+.pre-start #side-panel,
+.pre-start #center-button {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.game-started #welcome-screen {
+    visibility: hidden;
+    opacity: 0;
 }
 
 #hud {

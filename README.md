@@ -12,6 +12,7 @@ A small browser-based idle/exploration builder built with plain HTML, CSS, and J
 - Deterministic Energy and Research resource nodes across the map
 - Base XP from production, Home Core level-ups, and expanding reveal radius
 - Three-branch Research skill tree for Expansion, Production, and Surveying
+- Welcome start state that delays HUD display and production until the run begins
 - HUD for resources, rates, Base XP, selected tile details, and skill purchases
 - Tokenized light/dark appearance that follows system preferences or a saved choice
 - Blue viewport-edge marker and Home button that point back to the Home Core
@@ -56,6 +57,7 @@ tests/        Small Node-based regression tests
 
 ## Controls
 
+- Press Start the Home Core to begin the run.
 - Drag the canvas to pan around the grid.
 - Hover over tiles to highlight them.
 - Hover tiles to inspect claim costs, connection state, and resource benefits.

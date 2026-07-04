@@ -42,6 +42,7 @@ class IsoGrid {
         this.idleCanvasRenderInterval = 500;
         this.hudUpdateInterval = 120;
         this.resourceIconCache = new Map();
+        this.gameStarted = false;
         
         // Set canvas size to full window
         this.resizeCanvas();
@@ -73,6 +74,8 @@ class IsoGrid {
             tileTitle: document.getElementById('tile-title'),
             tileDetails: document.getElementById('tile-details'),
             tileAction: document.getElementById('tile-action'),
+            startButton: document.getElementById('start-button'),
+            welcomeScreen: document.getElementById('welcome-screen'),
             skillButtons: Array.from(document.querySelectorAll('.skill-button')),
             skillExpansion: document.getElementById('skill-expansion'),
             skillProduction: document.getElementById('skill-production'),
@@ -167,6 +170,7 @@ class IsoGrid {
         
         // Center button event listener
         document.getElementById('center-button').addEventListener('click', () => this.centerView());
+        this.dom.startButton.addEventListener('click', () => this.startGame());
         this.dom.tileAction.addEventListener('click', () => this.handleSelectedTileAction());
         for (const button of this.dom.skillButtons) {
             button.addEventListener('click', () => {
@@ -186,8 +190,26 @@ class IsoGrid {
         this.hudUpdateRequested = true;
         this.startAnimationLoop();
     }
+
+    startGame() {
+        if (this.gameStarted) {
+            return;
+        }
+
+        this.gameStarted = true;
+        this.gameState.lastTick = 0;
+        document.body.classList.remove('pre-start');
+        document.body.classList.add('game-started');
+        this.dom.welcomeScreen.setAttribute('aria-hidden', 'true');
+        this.requestHudUpdate();
+        this.requestRender();
+    }
     
     handleMouseDown(e) {
+        if (!this.gameStarted) {
+            return;
+        }
+
         this.stopCenterAnimation();
         this.isDragging = true;
         const rect = this.canvas.getBoundingClientRect();
@@ -198,6 +220,10 @@ class IsoGrid {
     }
     
     handleMouseMove(e) {
+        if (!this.gameStarted) {
+            return;
+        }
+
         if (this.isDragging) {
             const rect = this.canvas.getBoundingClientRect();
             const currentX = e.clientX - rect.left;
@@ -225,6 +251,10 @@ class IsoGrid {
     }
     
     handleMouseUp(e) {
+        if (!this.gameStarted) {
+            return;
+        }
+
         if (this.isDragging && e && this.pointerStart && this.dragDistance < 5) {
             const rect = this.canvas.getBoundingClientRect();
             this.handleTileClick(e.clientX - rect.left, e.clientY - rect.top);
@@ -235,6 +265,10 @@ class IsoGrid {
     }
     
     handleTouchStart(e) {
+        if (!this.gameStarted) {
+            return;
+        }
+
         e.preventDefault();
         this.stopCenterAnimation();
         this.isDragging = true;
@@ -246,6 +280,10 @@ class IsoGrid {
     }
     
     handleTouchMove(e) {
+        if (!this.gameStarted) {
+            return;
+        }
+
         e.preventDefault();
         if (this.isDragging) {
             const rect = this.canvas.getBoundingClientRect();
@@ -267,6 +305,10 @@ class IsoGrid {
     }
     
     handleTouchEnd(e) {
+        if (!this.gameStarted) {
+            return;
+        }
+
         if (this.isDragging && this.pointerStart && this.dragDistance < 5) {
             this.handleTileClick(this.pointerStart.x, this.pointerStart.y);
         }
@@ -447,7 +489,9 @@ class IsoGrid {
         const deltaMs = this.lastAnimationTime === 0 ? 16 : Math.min(timestamp - this.lastAnimationTime, 64);
         this.lastAnimationTime = timestamp;
         const stillAnimating = this.stepAnimations(timestamp, deltaMs);
-        this.gameState.tickFromTimestamp(timestamp);
+        if (this.gameStarted) {
+            this.gameState.tickFromTimestamp(timestamp);
+        }
 
         const shouldRender = this.renderRequested ||
             stillAnimating ||
