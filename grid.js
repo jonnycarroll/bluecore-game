@@ -983,7 +983,7 @@ class IsoGrid {
         this.dom.researchValue.textContent = this.formatNumber(this.gameState.research);
         this.dom.researchRate.textContent = `+${this.formatRate(rates.research)}/s`;
         this.dom.baseLevel.textContent = `Level ${this.gameState.baseLevel}`;
-        this.dom.baseXp.textContent = `${this.formatNumber(this.gameState.baseXp)} / ${xpRequired} XP`;
+        this.dom.baseXp.textContent = `${this.formatNumber(this.gameState.baseXp)} / ${this.formatNumber(xpRequired)} XP`;
         this.dom.xpFill.style.width = `${Math.min(this.gameState.baseXp / xpRequired, 1) * 100}%`;
         this.dom.centerButton.classList.toggle('level-ready', this.gameStarted && this.gameState.canLevelUpBase());
         this.updateSelectedPanel(selected);
@@ -1009,7 +1009,8 @@ class IsoGrid {
             const rates = this.gameState.getProductionRates();
             this.dom.tileDetails.textContent = `Reveal radius ${this.gameState.getGlobalRevealRadius()}. Output +${this.formatRate(rates.homeEnergy)} Energy/s.`;
         } else {
-            const costText = selected.isClaimed ? 'No claim cost' : `Cost ${selected.claimCost} Energy`;
+            const claimCost = this.formatNumber(selected.claimCost);
+            const costText = selected.isClaimed ? 'No claim cost' : `Cost ${claimCost} Energy`;
             const statusText = selected.isClaimed ? 'Claimed' : selected.isAdjacent ? 'Adjacent frontier' : 'Needs connection';
             this.dom.tileDetails.textContent = `${statusText}. ${costText}. Distance ${selected.distance}. ${resourceText}.`;
         }
@@ -1018,10 +1019,10 @@ class IsoGrid {
             this.dom.tileAction.textContent = `Level Up Base`;
             this.dom.tileAction.disabled = false;
         } else if (selected.canClaim) {
-            this.dom.tileAction.textContent = `Claim (${selected.claimCost} Energy)`;
+            this.dom.tileAction.textContent = `Claim (${this.formatNumber(selected.claimCost)} Energy)`;
             this.dom.tileAction.disabled = false;
         } else if (!selected.isClaimed && selected.isRevealed && selected.isAdjacent) {
-            this.dom.tileAction.textContent = `Need ${selected.claimCost} Energy`;
+            this.dom.tileAction.textContent = `Need ${this.formatNumber(selected.claimCost)} Energy`;
             this.dom.tileAction.disabled = true;
         } else {
             this.dom.tileAction.textContent = selected.isClaimed ? 'Claimed' : 'Select adjacent frontier';
@@ -1050,7 +1051,7 @@ class IsoGrid {
 
         this.dom.techTitle.textContent = `Level ${this.gameState.baseLevel} Tech Tree`;
         this.dom.techPoints.textContent = `${this.formatNumber(this.gameState.research)} Research`;
-        this.dom.techAward.textContent = `Level-up award: +${this.gameState.lastLevelResearchAward} Research. Run resources reset; Blue Core level and tech remain.`;
+        this.dom.techAward.textContent = `Level-up award: +${this.formatNumber(this.gameState.lastLevelResearchAward)} Research. Run resources reset; Blue Core level and tech remain.`;
 
         for (const button of this.dom.techButtons) {
             const tech = button.dataset.tech;
@@ -1060,21 +1061,45 @@ class IsoGrid {
 
             labels[tech].textContent = level >= maxLevel
                 ? `Level ${level} max for Core ${this.gameState.baseLevel} - x${multiplier.toFixed(2)}`
-                : `Level ${level} - ${cost} Research - x${multiplier.toFixed(2)}`;
+                : `Level ${level} - ${this.formatNumber(cost)} Research - x${multiplier.toFixed(2)}`;
             button.disabled = !this.gameState.canUpgradeTech(tech);
         }
     }
 
     formatNumber(value) {
-        if (value >= 100) {
-            return Math.floor(value).toString();
+        if (!Number.isFinite(value)) {
+            return '∞';
         }
 
-        return value.toFixed(1);
+        const absValue = Math.abs(value);
+        const sign = value < 0 ? '-' : '';
+        const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi'];
+
+        if (absValue < 10) {
+            return `${sign}${absValue.toFixed(2)}`;
+        }
+
+        if (absValue < 100) {
+            return `${sign}${absValue.toFixed(1)}`;
+        }
+
+        if (absValue < 1000) {
+            return `${sign}${Math.floor(absValue)}`;
+        }
+
+        const magnitude = Math.floor(Math.log10(absValue) / 3);
+        if (magnitude >= suffixes.length) {
+            return value.toExponential(2);
+        }
+
+        const scaled = absValue / Math.pow(1000, magnitude);
+        const precision = scaled < 10 ? 2 : scaled < 100 ? 1 : 0;
+
+        return `${sign}${scaled.toFixed(precision)}${suffixes[magnitude]}`;
     }
 
     formatRate(value) {
-        return value >= 10 ? value.toFixed(1) : value.toFixed(2);
+        return this.formatNumber(value);
     }
 
     capitalize(value) {
